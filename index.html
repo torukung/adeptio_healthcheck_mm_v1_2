@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
+<title>Adeptio Live Status — Pay Bill · Myanmar Bank</title>
+<!-- markup + boot only. Styles, data and engine are separate files, all loaded
+     with plain <link>/<script src> so this opens straight off disk (file://). -->
+<link rel="stylesheet" href="assets/styles.css"/>
+</head>
+<body>
+<div class="app">
+  <div class="topbar">
+    <div class="brand"><div class="logo">A</div>
+      <div><div class="t">Live Status — Pay&nbsp;Bill<span class="ver">v1.3 engine · Pay Bill · 7-day</span></div><div class="s">Myanmar commercial-bank template · 7-day mock data</div></div>
+    </div>
+    <!--SF-STRIP-START--><a class="navchip" href="flow-instrumentation.html" title="Open the use-case flow map (page 2)">Use-case &middot; flow map &rarr;</a><!--SF-STRIP-END-->
+    <div class="spacer"></div>
+    <div class="summary" id="summary"></div>
+    <div class="freshness"><span class="livedot" id="livedot"></span><span id="asof">as of —</span></div>
+    <div class="search"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4-4"/></svg><input id="search" placeholder="Search objects… (Core, SMS)" autocomplete="off"/></div>
+    <div class="tools">
+      <button class="tbtn on" id="tabtoggle" title="Toggle live tables"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M3 10h18M9 10v10M15 10v10"/></svg></button>
+      <button class="tbtn" id="zoomout" title="Zoom out"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4-4M8 11h6"/></svg></button>
+      <button class="tbtn" id="zoomin" title="Zoom in"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4-4M11 8v6M8 11h6"/></svg></button>
+      <button class="tbtn" id="fit" title="Fit to screen"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5"/></svg></button>
+      <button class="tbtn" id="theme" title="Toggle light / dark"><svg id="themeicon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12.8A9 9 0 1111.2 3 7 7 0 0021 12.8z"/></svg></button>
+    </div>
+  </div>
+
+  <div class="stage" id="stage">
+    <div class="grid-bg"></div>
+    <svg class="canvas" id="canvas"><g id="viewport"><g id="links"></g><g id="nodes"></g></g></svg>
+    <div class="hint" id="hint"><span class="x" id="hintx">✕</span><b>v1.3:</b> nodes snap to grid · drag canvas to pan · scroll to zoom · hover for status · click to open a pane · resize the right dock &amp; the bottom tables · ▶ replays a full week.</div>
+    <div class="scenario" id="scenario"></div>
+    <div class="hovercard" id="hovercard"></div>
+    <div class="legend" id="legend"></div>
+    <aside class="dock" id="dock">
+      <div class="dockresizer" id="dockresizer" title="Drag to resize"></div>
+      <div class="dock-h"><span class="t">Details</span><span class="c" id="dockcount"></span>
+        <div style="margin-left:auto;display:flex;gap:4px"><button class="iconbtn" id="closeall" title="Close all">✕</button></div>
+      </div>
+      <div class="dock-body" id="dockbody"><div class="empty">Click any object on the map to open its live detail here. Panels stack — pin the ones you want to keep watching. Drag the left edge to resize.</div></div>
+    </aside>
+  </div>
+
+  <!-- BOTTOM LIVE TABLES -->
+  <div class="bottom" id="bottom">
+    <div class="bhandle" id="bhandle" title="Drag to resize height"></div>
+    <div class="bhead">
+      <span class="bt">Live synthesis</span><span class="bsub" id="bsub">updates with the timeline · 5-min resolution</span>
+      <div class="bacts">
+        <span class="bsub" id="brefresh"></span>
+        <button class="iconbtn" id="brefreshbtn" title="Refresh tables now"><svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 11a8 8 0 10-2.3 5.7M20 5v6h-6"/></svg></button>
+        <button class="iconbtn" id="bclose" title="Close tables">✕</button>
+      </div>
+    </div>
+    <div class="btables" id="btables">
+      <section class="btbl" id="tblA" style="width:34%">
+        <div class="btbl-h"><span class="tt">A · Top errors <span class="tag" id="aTag">7 days</span></span>
+          <div class="ctrls">
+            <select class="mini" id="aWin" title="Time frame"><option value="5m">5 min</option><option value="15m">15 min</option><option value="1h">1 hour</option><option value="3h">3 hours</option><option value="6h">6 hours</option><option value="12h">12 hours</option><option value="24h">24 hours</option><option value="2d">2 days</option><option value="7d" selected>7 days</option></select>
+            <select class="mini" id="aRank" title="Rank by"><option value="sev">Severity-weighted</option><option value="down">Downtime</option><option value="ev">Event count</option></select>
+          </div>
+        </div>
+        <div class="tblwrap" id="aWrap"></div>
+      </section>
+      <div class="vdiv" data-l="tblA" style="width:6px;cursor:col-resize;background:transparent"></div>
+      <section class="btbl" id="tblB" style="width:34%">
+        <div class="btbl-h"><span class="tt">B · Recent errors <span class="tag" id="bTag">5 min</span></span><div class="ctrls"><span class="bsub">newest first</span><select class="mini" id="bWinSel" title="Time frame"><option value="5m" selected>5 min</option><option value="15m">15 min</option><option value="1h">1 hour</option><option value="3h">3 hours</option><option value="6h">6 hours</option><option value="12h">12 hours</option><option value="24h">24 hours</option><option value="2d">2 days</option><option value="7d">7 days</option></select></div></div>
+        <div class="tblwrap" id="bWrap"></div>
+      </section>
+      <div class="vdiv" data-l="tblB" style="width:6px;cursor:col-resize;background:transparent"></div>
+      <section class="btbl" id="tblC">
+        <div class="btbl-h"><span class="tt">C · Custom <span class="tag">configurable</span></span>
+          <div class="ctrls">
+            <button class="mini" id="cCols" title="Choose columns">Columns ▾</button>
+            <select class="mini" id="cWin" title="Time frame"><option value="5m">5 min</option><option value="15m">15 min</option><option value="1h" selected>1 hour</option><option value="3h">3 hours</option><option value="6h">6 hours</option><option value="12h">12 hours</option><option value="24h">24 hours</option><option value="2d">2 days</option><option value="7d">7 days</option></select>
+            <select class="mini" id="cSev" title="Severity"><option value="all">All sev</option><option value="crit">Critical</option><option value="warn">Warn+</option></select>
+            <select class="mini" id="cNode" title="Node"></select>
+          </div>
+        </div>
+        <div class="tblwrap" id="cWrap"></div>
+        <div class="colmenu" id="colmenu"></div>
+      </section>
+    </div>
+  </div>
+
+  <!-- TIMELINE -->
+  <div class="timeline">
+    <button class="play" id="playbtn" title="Play / pause 7-day replay"><svg id="playicon" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg></button>
+    <div class="tl-mid">
+      <div class="tl-top"><span id="tlstart">−24h</span><span class="cur" id="tlcur">now</span><span id="tlend">now</span></div>
+      <div class="track" id="track"><div id="bands"></div><div id="hticks"></div><div class="fill" id="fill"></div><div class="head" id="head"></div><div class="ghost" id="ghost"></div></div>
+    </div>
+    <div class="tl-right"><button class="speed" id="resetbtn" title="Reset all — restart from the beginning">⟲ Reset</button><button class="speed" id="speed" title="Playback speed">1×</button><button class="speed" id="nowbtn" title="Jump to now">Now</button></div>
+  </div>
+</div>
+
+<!-- 1 · topology + objective definitions (no series) -->
+<script src="data/manifest.js"></script>
+<!-- 2 · frozen week: seven 288-step day slices, stitched by the engine -->
+<script src="data/log_day1.js"></script>
+<script src="data/log_day2.js"></script>
+<script src="data/log_day3.js"></script>
+<script src="data/log_day4.js"></script>
+<script src="data/log_day5.js"></script>
+<script src="data/log_day6.js"></script>
+<script src="data/log_day7.js"></script>
+<!-- 3 · engine: hydrate → render → interact -->
+<script src="assets/engine.js"></script>
+</body>
+</html>
