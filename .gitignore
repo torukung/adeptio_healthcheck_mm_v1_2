@@ -3,3 +3,8 @@ Thumbs.db
 __pycache__/
 *.pyc
 *.zip
+
+# Materialised day logs (~1.3 MB) are a build artefact of the seeded generator,
+# not source: the engine rebuilds the identical week from ADEPTIO_SEED. They ship
+# in the release zip, not in the repo. See data/README.md.
+data/log_day*.js

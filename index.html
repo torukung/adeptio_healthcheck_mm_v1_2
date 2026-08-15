@@ -99,7 +99,13 @@
 
 <!-- 1 · topology + objective definitions (no series) -->
 <script src="data/manifest.js"></script>
-<!-- 2 · frozen week: seven 288-step day slices, stitched by the engine -->
+<!--ADEPTIO-LOGS-START
+     2 · materialised week (OPTIONAL). This repo ships in SEEDED REPLAY mode: the
+     engine regenerates the identical canonical week from ADEPTIO_SEED, so no day
+     files are needed and GitHub Pages serves it with no 404s. To switch to
+     materialised mode, drop data/log_day1..7.js in and delete the two comment
+     delimiters below. See data/README.md. -->
+<!--
 <script src="data/log_day1.js"></script>
 <script src="data/log_day2.js"></script>
 <script src="data/log_day3.js"></script>
@@ -107,6 +113,8 @@
 <script src="data/log_day5.js"></script>
 <script src="data/log_day6.js"></script>
 <script src="data/log_day7.js"></script>
+-->
+<!--ADEPTIO-LOGS-END-->
 <!-- 3 · engine: hydrate → render → interact -->
 <script src="assets/engine.js"></script>
 </body>

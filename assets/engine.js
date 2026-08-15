@@ -4,10 +4,11 @@
  * build except for ONE thing: series are not generated at boot — they are read
  * from window.ADEPTIO_LOGS (data/log_day1.js … log_day7.js) and stitched into
  * the same o.vals[] / o.stat[] arrays the renderer has always consumed.
- * gen() is kept below as a documented fallback: if ADEPTIO_LOGS is missing the
- * engine synthesises a fresh random week and the banner is tagged
- * "live-generated".
- * Load order: data/manifest.js → data/log_day*.js → assets/engine.js
+ * gen() is kept below as a SEEDED fallback: if ADEPTIO_LOGS is missing the engine
+ * regenerates the identical canonical week from ADEPTIO_SEED and the banner is
+ * tagged "seeded replay". Both modes therefore produce byte-identical series —
+ * the log files are simply a materialised copy of the seeded output.
+ * Load order: data/manifest.js → data/log_day*.js (optional) → assets/engine.js
  * ==========================================================================*/
 "use strict";
 
@@ -25,16 +26,27 @@ function hm(i){ const m=(i%DAY)*STEP_MIN; return String(Math.floor(m/60)).padSta
 function dstamp(i){ return 'D'+dayOf(i)+' '+hm(i); }
 function win(t,a,peak,b){ if(t<=a||t>=b) return 0; return t<=peak?(t-a)/(peak-a):(b-t)/(b-peak); }
 function ramp(t,a,b){ if(t<=a) return 0; if(t>=b) return 1; return (t-a)/(b-a); }
-function rnd(n){ return (Math.random()-0.5)*n; }
+/* ---------- SEEDED PRNG ----------------------------------------------------
+ * All series-generation randomness runs through here. mulberry32 seeded from a
+ * fixed constant makes the fallback generator fully deterministic: every load
+ * rebuilds the SAME canonical week, so seeded replay == the materialised logs.
+ * Each series re-seeds from ADEPTIO_SEED mixed with its own key, so a series is
+ * independent of generation order (a partially-missing log set still matches). */
+const ADEPTIO_SEED = 20260815;
+function mulberry32(a){ return function(){ a=a+0x6D2B79F5|0; let t=Math.imul(a^a>>>15,1|a); t=t+Math.imul(t^t>>>7,61|t)^t; return ((t^t>>>14)>>>0)/4294967296; }; }
+function keySeed(key){ let h=ADEPTIO_SEED>>>0; for(let i=0;i<key.length;i++){ h=Math.imul(h^key.charCodeAt(i),16777619)>>>0; } return h; }
+let RNG = mulberry32(ADEPTIO_SEED);
+function rnd(n){ return (RNG()-0.5)*n; }
 function clamp(v,a,b){ return Math.max(a,Math.min(b,v)); }
 
 // E2: window shape is inferred from its length — no per-key special cases.
 function sevAt(k,t){ const w=INC[k]; if(!w) return 0; return w.length===2 ? ramp(t,w[0],w[1]) : win(t,w[0],w[1],w[2]); }
 
-/* ---------- FALLBACK generator (only runs when ADEPTIO_LOGS is absent) ----------
+/* ---------- SEEDED generator (only runs when ADEPTIO_LOGS is absent) ----------
  * E3: o.inc is either a legacy key string (amplitude = o.amp) or {incidentKey: amplitude};
  * multi takes the MAX displacement. Produces exactly the shape the log files ship. */
-function gen(o){
+function gen(o,key){
+  RNG = mulberry32(keySeed(key||''));
   const vals=[], stat=[], inc=o.inc, multi = inc!==null && typeof inc==='object';
   for(let t=0;t<N;t++){
     let d=0;
@@ -72,17 +84,18 @@ function stitch(days, key){
   return (vals.length===N) ? {vals,stat} : null;
 }
 const LOGDAYS = collectLogs();
-let DATA_MODE = LOGDAYS ? 'frozen-logs' : 'live-generated';
+let DATA_MODE = LOGDAYS ? 'frozen-logs' : 'seeded replay';
 function series(key, def){
-  if(LOGDAYS){ const s = stitch(LOGDAYS, key); if(s) return s; DATA_MODE='live-generated'; }
-  return gen(def);
+  if(LOGDAYS){ const s = stitch(LOGDAYS, key); if(s) return s; DATA_MODE='seeded replay'; }
+  return gen(def, key);
 }
 NODES.forEach(n=>{ n.objs.forEach((o,i)=>{ const g=series(n.id+'.'+i,o); o.vals=g.vals; o.stat=g.stat; o.eps=episodes(o.stat); }); n.note=''; n.pinned=false; });
 const KPI = series('KPI', D_.KPI);
 window.ADEPTIO_MODE = DATA_MODE;
-/* frozen logs are the normal case and go unmarked; the gen() fallback says so in the banner */
-const DATA_TAG = DATA_MODE==='live-generated'
-  ? ' <span style="color:var(--warn);font-weight:650">· live-generated</span>' : '';
+/* materialised logs are the unmarked default; seeded regeneration says so in the
+   banner — same week either way, so the tag is informational, not a warning */
+const DATA_TAG = DATA_MODE==='seeded replay'
+  ? ' <span style="color:var(--chipink);font-weight:650">· seeded replay</span>' : '';
 
 const ALLOBJ=[]; NODES.forEach(n=>n.objs.forEach(o=>ALLOBJ.push({n,o})));
 const ORIG=NODES.map(n=>({x:n.x,y:n.y}));

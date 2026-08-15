@@ -1,6 +1,6 @@
 # Pay Bill API Visibility — live dashboard + flow instrumentation
 
-> **© Adeptio — public demonstration template.** All data is mock/generated in-browser or frozen day-logs; every figure is illustrative. Not affiliated with or describing any named institution.
+> **© Adeptio — public demonstration template.** All data is mock — regenerated in-browser from a fixed seed; every figure is illustrative. Not affiliated with or describing any named institution.
 
 Two linked pages that make one argument: a Pay Bill journey at a Myanmar
 commercial bank can be watched end to end, and when it breaks the checks
@@ -8,7 +8,7 @@ themselves name the layer and the team.
 
 | | Page | What it is |
 |---|---|---|
-| 1 | [`index.html`](index.html) | **Live status dashboard.** 16 nodes, 17 links, a frozen 7-day mock week (2016 steps × 5 min) with nine incident windows, three live synthesis tables, and a scrubable timeline. |
+| 1 | [`index.html`](index.html) | **Live status dashboard.** 16 nodes, 17 links, a deterministic 7-day mock week (2016 steps × 5 min) with nine incident windows, three live synthesis tables, and a scrubable timeline. |
 | 2 | [`flow-instrumentation.html`](flow-instrumentation.html) | **The use case, fully instrumented.** Pay Bill top to bottom — the software each step crosses, the hardware it rides, the 52 health checks that watch both, and five fault fingerprints that turn a check pattern into a routed ticket. |
 
 Vanilla HTML + CSS + SVG + JS. No framework, no build step, no dependencies, no
@@ -41,10 +41,18 @@ Works as-is, no workflow and no Jekyll config:
 
 **Settings → Pages → Build and deployment → Deploy from a branch → `main` / `/root` → Save.**
 
-Every link, asset and data path in both pages is relative, and a `.nojekyll`
-file is included so Pages serves the folder verbatim (without it, Jekyll would
-ignore nothing here today, but it also would not have to — `.nojekyll` removes
-the whole class of surprise).
+Every link and asset path in both pages is relative, and a `.nojekyll` file is
+included so Pages serves the folder verbatim (without it, Jekyll would ignore
+nothing here today, but it also would not have to — `.nojekyll` removes the
+whole class of surprise).
+
+The hosted copy carries **no day-log data files** — 1.3 MB of series that the
+browser can rebuild for free. The engine regenerates the identical week from a
+fixed seed instead (`ADEPTIO_SEED = 20260815`), so Pages, a local `file://` open
+and the single-file build all tell the same story, step for step. The banner
+tags it `· seeded replay`. If you want the materialised day logs — because you
+are wiring the same shape to a real feed — take them from the release zip and
+follow [`data/README.md`](data/README.md).
 
 ## Page map and the deep-link trick
 
@@ -77,7 +85,8 @@ the end of the week, as it does without a hash.
 | `assets/engine.js` | Page-1 engine: hydration, rendering, interaction, tables, timeline. |
 | `assets/flow.css` | Page-2 global stylesheet (extracted from that page's `<head>`). |
 | `data/manifest.js` | Topology + objective definitions. No time series. |
-| `data/log_day1..7.js` | The frozen week, one file per mock day. |
+| `data/README.md` | The two data modes, and the live-feed contract. |
+| `data/log_day1..7.js` | *Optional.* Materialised week, one file per mock day — not committed; in the release zip. |
 | `docs/SPEC-Dashboard-v1.2.md` | Engine spec — layout, interactions, verification checklist (§9). |
 | `docs/SPEC-Dashboard-v1.3-Addendum.md` | v1.3 Pay Bill delta on top of that spec. |
 | `build_singlefile.py` | Re-inlines page 1 into one portable HTML file. |
@@ -86,12 +95,22 @@ the end of the week, as it does without a hash.
 `index.html` loads its scripts in exactly this order, and the order matters:
 
 1. `data/manifest.js` — defines `window.ADEPTIO_DATA`
-2. `data/log_day1.js` … `log_day7.js` — each appends one day to `window.ADEPTIO_LOGS`
-3. `assets/engine.js` — reads both, hydrates, renders
+2. `data/log_day1.js` … `log_day7.js` — *optional*, each appends one day to
+   `window.ADEPTIO_LOGS`. Absent in this repo; the tags sit commented between the
+   `ADEPTIO-LOGS-START` / `-END` markers, ready to switch on.
+3. `assets/engine.js` — reads what is there, hydrates, renders
 
 ## Data contract
 
-Each day file is one flat object of 288-step slices:
+Series reach the renderer one of two ways, and both yield identical numbers —
+see [`data/README.md`](data/README.md) for the short version.
+
+**Seeded replay (default here).** No log files present: the engine rebuilds the
+week from `ADEPTIO_SEED` with a mulberry32 PRNG re-seeded per series key, so the
+output does not depend on generation order and never drifts between loads.
+`window.ADEPTIO_MODE === 'seeded replay'`.
+
+**Materialised logs.** Each day file is one flat object of 288-step slices:
 
 ```js
 window.ADEPTIO_LOGS = window.ADEPTIO_LOGS || {};
@@ -108,14 +127,12 @@ window.ADEPTIO_LOGS.d4 = {
 * The engine concatenates `d1…d7` in order into the 2016-step `vals[]` / `stat[]`
   arrays it consumes. Day length is read from the data, not assumed.
 
-Because the week is frozen, every load tells the identical story — which is what
-you want for a demo or a screenshot set.
-
-If `window.ADEPTIO_LOGS` is missing or incomplete, the engine falls back to
-`gen()` — the synthetic generator still in `assets/engine.js` — and synthesises a
-fresh random week from the amplitudes in `manifest.js`. The scenario banner is
-tagged **live-generated** so you can tell at a glance, and `window.ADEPTIO_MODE`
-reports `frozen-logs` or `live-generated`.
+Every load tells the identical story either way — which is what you want for a
+demo or a screenshot set. The shipped day files were dumped from the seeded
+generator, so adding or removing them changes nothing on screen; that equality is
+verified step-for-step. When logs are present `window.ADEPTIO_MODE` reports
+`frozen-logs` and the banner stays unmarked; when they are absent it reports
+`seeded replay` and the banner says so.
 
 ### Wiring a live feed
 
@@ -139,9 +156,10 @@ rendering and interaction and knows nothing about Pay Bill. A retarget that
 touches `engine.js` is a retarget that has gone wrong — the divergence will cost
 you at the next upgrade.
 
-After editing the manifest, regenerate `data/log_day1..7.js` so the frozen series
-still line up with the new `objs[]` indices; a stale log keyed to an old index
-silently paints the wrong objective.
+Seeded replay follows the manifest automatically. If you keep materialised day
+logs, regenerate them after editing the manifest so the series still line up with
+the new `objs[]` indices — a stale log keyed to an old index silently paints the
+wrong objective.
 
 ## Rebuilding the single-file variant
 
@@ -153,10 +171,11 @@ python3 build_singlefile.py somewhere.html  # or an explicit path
 ```
 
 It inlines every `<link rel=stylesheet>` and `<script src>` verbatim, in the same
-order, with the frozen data embedded, and drops anything wrapped in
-`<!--SF-STRIP-START--> … <!--SF-STRIP-END-->` — currently just the page-2 link
-chip, which would dangle in a file shipped on its own. Nothing is minified or
-reordered, so the single file behaves identically: same statuses, same values,
-same timeline, same `#t=` deep links.
+order, and leaves out two things: anything wrapped in `<!--SF-STRIP-START--> …
+<!--SF-STRIP-END-->` (currently just the page-2 link chip, which would dangle in
+a file shipped on its own), and the day logs — seeded replay rebuilds them, so
+the build stays ~72 KB instead of ~1.4 MB. Nothing is minified or reordered, so
+the single file behaves identically: same statuses, same values, same timeline,
+same `#t=` deep links.
 
 Edit the site sources, never the built file, then re-run the build.

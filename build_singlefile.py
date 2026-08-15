@@ -6,11 +6,18 @@ The site folder is the SOURCE OF TRUTH; the single-file dashboard is a build
 product. This script walks index.html, swaps every <link rel=stylesheet> for an
 inline <style> and every <script src> for an inline <script>, and writes the
 result out. Nothing is minified or reordered, so the single file behaves exactly
-like the site (same frozen logs, same engine, same load order).
+like the site (same engine, same load order, same week).
 
-Anything between <!--SF-STRIP-START--> and <!--SF-STRIP-END--> is dropped: the
-single file is standalone, so site-only chrome (the page-2 link chip, which
-would point at a file that isn't shipped alongside it) does not belong in it.
+Two things are deliberately left out of the single file:
+
+  * anything between <!--SF-STRIP-START--> and <!--SF-STRIP-END--> — site-only
+    chrome such as the page-2 link chip, which would point at a file that is not
+    shipped alongside the standalone build;
+  * the materialised day logs (data/log_day*.js, ~1.3 MB). The engine's seeded
+    generator (ADEPTIO_SEED, mulberry32) rebuilds the identical canonical week in
+    the browser, so embedding them would only make the file 20x larger for the
+    same pixels. The build therefore runs in "seeded replay" mode by design, even
+    when built from the materialised variant of index.html.
 
   usage:  python3 build_singlefile.py [output.html]
   default output: ../adeptio_paybill_live_dashboard.html
@@ -23,6 +30,8 @@ OUT  = pathlib.Path(sys.argv[1]) if len(sys.argv) > 1 else HERE.parent / 'adepti
 LINK = re.compile(r'^[ \t]*<link[^>]*rel="stylesheet"[^>]*href="([^"]+)"[^>]*/?>[ \t]*$')
 SCPT = re.compile(r'^[ \t]*<script[^>]*src="([^"]+)"[^>]*>\s*</script>[ \t]*$')
 STRIP = re.compile(r'<!--SF-STRIP-START-->.*?<!--SF-STRIP-END-->', re.S)
+DAYLOG = re.compile(r'(^|/)log_day\d+\.js$')
+LOGBLOCK = re.compile(r'<!--ADEPTIO-LOGS-START.*?<!--ADEPTIO-LOGS-END-->', re.S)
 
 def read(rel):
     p = (HERE / rel).resolve()
@@ -38,8 +47,11 @@ def read(rel):
 
 src = (HERE / 'index.html').read_text()
 src, nstripped = STRIP.subn('', src)          # drop site-only chrome
+# the day-log toggle block is meaningless in a standalone file — collapse it to a note
+src = LOGBLOCK.sub('<!-- day logs are not embedded: the seeded generator rebuilds the '
+                   'identical week (see assets/engine.js, ADEPTIO_SEED). -->', src)
 
-out, inlined = [], []
+out, inlined, skipped = [], [], []
 for line in src.split('\n'):
     m = LINK.match(line)
     if m:
@@ -47,6 +59,9 @@ for line in src.split('\n'):
         out += ['<style>', '/* inlined from %s */' % m.group(1), css.rstrip('\n'), '</style>']
         inlined.append((m.group(1), p.stat().st_size)); continue
     m = SCPT.match(line)
+    if m and DAYLOG.search(m.group(1)):
+        # materialised day log — never embedded; the seeded generator covers it
+        skipped.append(m.group(1)); continue
     if m:
         js, p = read(m.group(1))
         out += ['<script>', '/* inlined from %s */' % m.group(1), js.rstrip('\n'), '</script>']
@@ -63,6 +78,9 @@ OUT.write_text(html)
 
 if nstripped:
     print('  stripped %d site-only block%s (SF-STRIP)' % (nstripped, '' if nstripped == 1 else 's'))
+if skipped:
+    print('  skipped  %d day-log file%s — seeded replay regenerates the same week'
+          % (len(skipped), '' if len(skipped) == 1 else 's'))
 for rel, sz in inlined:
     print('  inlined %-22s %8.1f KB' % (rel, sz / 1024))
 print('wrote %s  (%.1f KB, %d lines)' % (OUT, OUT.stat().st_size / 1024, html.count('\n') + 1))
