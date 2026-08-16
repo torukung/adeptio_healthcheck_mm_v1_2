@@ -85,16 +85,19 @@ the end of the week, as it does without a hash.
 | `assets/engine.js` | Page-1 engine: hydration, rendering, interaction, tables, timeline. |
 | `assets/flow.css` | Page-2 global stylesheet (extracted from that page's `<head>`). |
 | `data/manifest.js` | Topology + objective definitions. No time series. |
+| `data/rcameta.js` | RCA metadata behind the incident panel: per-object description / customer page / neighbour systems / owner, plus first checks + questions for all 61 objectives. |
 | `data/README.md` | The two data modes, and the live-feed contract. |
 | `data/log_day1..7.js` | *Optional.* Materialised week, one file per mock day — not committed; in the release zip. |
 | `docs/SPEC-Dashboard-v1.2.md` | Engine spec — layout, interactions, verification checklist (§9). |
-| `docs/SPEC-Dashboard-v1.3-Addendum.md` | v1.3 Pay Bill delta on top of that spec. |
+| `docs/SPEC-Dashboard-v1.2.1-Addendum.md` | v1.2.1 Pay Bill delta on top of that spec. |
 | `build_singlefile.py` | Re-inlines page 1 into one portable HTML file. |
 | `.nojekyll` | Serve verbatim on GitHub Pages. |
 
 `index.html` loads its scripts in exactly this order, and the order matters:
 
 1. `data/manifest.js` — defines `window.ADEPTIO_DATA`
+1b. `data/rcameta.js` — defines `window.ADEPTIO_RCA` (optional: the engine runs
+   without it, the incident panel simply shows blank copy)
 2. `data/log_day1.js` … `log_day7.js` — *optional*, each appends one day to
    `window.ADEPTIO_LOGS`. Absent in this repo; the tags sit commented between the
    `ADEPTIO-LOGS-START` / `-END` markers, ready to switch on.

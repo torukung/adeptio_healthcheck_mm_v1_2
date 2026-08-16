@@ -29,4 +29,15 @@ enable: drop them in here and delete the two `<!--` / `-->` delimiters between t
 `ADEPTIO-LOGS-START` / `-END` markers in `index.html`. They were dumped from the
 seeded generator, so the switch changes nothing on screen.
 
-`build_singlefile.py` never embeds them — the standalone build stays ~72 KB.
+`build_singlefile.py` never embeds them; the standalone build regenerates the week
+from the seed instead (~140 KB, most of which is `rcameta.js`).
+
+## 3 · `rcameta.js` — RCA copy, not series
+
+Loaded right after `manifest.js`. `window.ADEPTIO_RCA` has `nodes[<id>]`
+(`desc` / `page` / `systems` / `owner`) for all 16 objects and
+`indicators["<nodeId>.<objective label>"]` (`checks` / `questions`) for all 61
+objectives — the content of the incident panel, and the seed text for each pane's
+editable "About this object". Keys mirror `manifest.js` exactly; if you retarget
+the topology, re-key this file too. It is optional: without it the engine still
+runs and the panel simply renders blank copy.
