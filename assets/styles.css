@@ -73,6 +73,10 @@ svg.canvas.panning{cursor:grabbing}
 .node .ic{stroke:var(--ink);stroke-width:1.7;fill:none;stroke-linecap:round;stroke-linejoin:round;opacity:.9}
 .node .lbl{fill:var(--ink);font-size:12px;font-weight:600;text-anchor:middle;paint-order:stroke;stroke:var(--bg);stroke-width:3px;stroke-linejoin:round}
 .node .ip{fill:var(--muted);font-size:10px;text-anchor:middle;paint-order:stroke;stroke:var(--bg);stroke-width:3px}
+/* third label line — polling / collection method. Deliberately quieter than the
+   subtitle: smaller, mono, half-toned slate. --ink2 at .62 renders dimmer than
+   .ip in BOTH themes while still clearing 3:1 at 9px (muted at .55 was ~2:1). */
+.node .pm{fill:var(--ink2);opacity:.62;font-size:9px;font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;letter-spacing:.01em;text-anchor:middle;paint-order:stroke;stroke:var(--bg);stroke-width:3px}
 .node.dim{opacity:.28;transition:opacity .2s}
 .arc{fill:none;stroke-width:4;stroke-linecap:round;transition:stroke .4s}
 .notebadge{fill:var(--maint)} .pin{fill:var(--warn)}
