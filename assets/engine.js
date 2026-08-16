@@ -89,7 +89,14 @@ function series(key, def){
   if(LOGDAYS){ const s = stitch(LOGDAYS, key); if(s) return s; DATA_MODE='seeded replay'; }
   return gen(def, key);
 }
-NODES.forEach(n=>{ n.objs.forEach((o,i)=>{ const g=series(n.id+'.'+i,o); o.vals=g.vals; o.stat=g.stat; o.eps=episodes(o.stat); }); n.note=''; n.pinned=false; });
+/* RCA metadata (data/rcameta.js) — optional: the engine degrades to blank copy
+   if it is absent, so the dashboard still runs from manifest + engine alone. */
+const RCA = window.ADEPTIO_RCA || {nodes:{},indicators:{}};
+function rcaNode(id){ return (RCA.nodes&&RCA.nodes[id])||null; }
+function rcaInd(id,label){ return (RCA.indicators&&RCA.indicators[id+'.'+label])||null; }
+function aboutDefault(id){ const m=rcaNode(id); return m&&m.desc?m.desc:''; }
+
+NODES.forEach(n=>{ n.objs.forEach((o,i)=>{ const g=series(n.id+'.'+i,o); o.vals=g.vals; o.stat=g.stat; o.eps=episodes(o.stat); }); n.note=''; n.pinned=false; n.about=aboutDefault(n.id); });
 const KPI = series('KPI', D_.KPI);
 window.ADEPTIO_MODE = DATA_MODE;
 /* materialised logs are the unmarked default; seeded regeneration says so in the
@@ -144,7 +151,7 @@ function paint(){
     n.el.querySelector('.notebadge').style.display=n.note?'':'none';
     n.el.querySelector('.pin').style.display=n.pinned?'':'none';
   });
-  paintSummary(); updateClock(); refreshPanes(); renderTables();
+  paintSummary(); updateClock(); refreshPanes(); renderTables(); renderRCA();
 }
 function paintSummary(){ const t=cur; let ok=0,w=0,c=0; NODES.forEach(n=>{ const s=nodeStatus(n,t); if(s==='crit')c++;else if(s==='warn')w++;else ok++; });
   const S=document.getElementById('summary'); S.innerHTML='';
@@ -168,15 +175,35 @@ function updateClock(){ document.getElementById('tlcur').textContent=dstamp(cur)
   document.getElementById('livedot').style.background=cur===N-1?statusColor('ok'):'var(--muted)';
   document.getElementById('brefresh').textContent='window ends '+dstamp(cur);
 }
-function sparkline(o,w,h){ const vals=o.vals,mn=Math.min(...vals),mx=Math.max(...vals),rg=(mx-mn)||1,dx=w/(N-1); let d='';
-  vals.forEach((v,i)=>{ const x=i*dx,y=h-((v-mn)/rg)*(h-4)-2; d+=(i?'L':'M')+x.toFixed(1)+' '+y.toFixed(1); });
-  const cx=cur*dx,cyv=h-((vals[cur]-mn)/rg)*(h-4)-2,col=statusColor(o.stat[cur]);
-  return `<svg class="spark" width="${w}" height="${h}" viewBox="0 0 ${w} ${h}"><path d="${d}" fill="none" stroke="var(--muted)" stroke-width="1.2" opacity="0.55"/><path d="${d} L${w} ${h} L0 ${h} Z" fill="${col}" opacity="0.08"/><line x1="${cx.toFixed(1)}" y1="0" x2="${cx.toFixed(1)}" y2="${h}" stroke="${col}" stroke-width="1" opacity="0.5"/><circle cx="${cx.toFixed(1)}" cy="${cyv.toFixed(1)}" r="2.4" fill="${col}"/></svg>`; }
+/* F1 · FULL-SERIES SPARKLINE ---------------------------------------------------
+ * The whole week is drawn at every t, so a graph is never empty before you press
+ * play. Geometry is identical either side of the cursor; the stretch AFTER t is
+ * ghosted (.3) and the stretch up to t is solid, with a 1px now-cursor + dot that
+ * sweeps during playback. The numeric read-out beside it stays the value at t.
+ *   opt.fluid → svg stretches to the container width (dock panes, RCA panel)
+ *   opt.tint  → {start,end,sev} shades one episode region (incident popup)      */
+function sparkline(o,w,h,opt){ opt=opt||{};
+  const vals=o.vals,mn=Math.min(...vals),mx=Math.max(...vals),rg=(mx-mn)||1,dx=w/(N-1);
+  const X=i=>+(i*dx).toFixed(1), Y=v=>+(h-((v-mn)/rg)*(h-4)-2).toFixed(1);
+  let dAll='',dPast='';
+  for(let i=0;i<N;i++){ const seg=(i?'L':'M')+X(i)+' '+Y(vals[i]); dAll+=seg; if(i<=cur)dPast+=seg; }
+  const cx=X(cur),cy=Y(vals[cur]),col=statusColor(o.stat[cur]);
+  let tint='';
+  if(opt.tint){ const x0=X(clamp(opt.tint.start,0,N-1)),x1=X(clamp(opt.tint.end,0,N-1));
+    tint=`<rect x="${x0}" y="0" width="${Math.max(1.5,+(x1-x0).toFixed(1))}" height="${h}" fill="${statusColor(opt.tint.sev||'warn')}" opacity="0.20"/>`; }
+  const size=opt.fluid?`width="100%" height="${h}" preserveAspectRatio="none"`:`width="${w}" height="${h}"`;
+  return `<svg class="spark" ${size} viewBox="0 0 ${w} ${h}">${tint}`+
+    `<path d="${dAll}" fill="none" stroke="var(--muted)" stroke-width="1.1" opacity="0.3"/>`+
+    `<path d="${dPast} L${cx} ${h} L0 ${h} Z" fill="${col}" opacity="0.10"/>`+
+    `<path d="${dPast}" fill="none" stroke="var(--muted)" stroke-width="1.3" opacity="0.95"/>`+
+    `<line x1="${cx}" y1="0" x2="${cx}" y2="${h}" stroke="${col}" stroke-width="1" opacity="0.8"/>`+
+    `<circle cx="${cx}" cy="${cy}" r="2.4" fill="${col}"/></svg>`; }
 
 /* hover card */
 const hc=document.getElementById('hovercard'); let hoverTimer=null;
 function showHover(n,evt){ clearTimeout(hoverTimer); hoverTimer=setTimeout(()=>{ const t=cur,ns=nodeStatus(n,t); let rows='';
-  n.objs.forEach(o=>{ rows+=`<div class="hc-row"><span class="sd" style="background:${statusColor(o.stat[t])}"></span><span class="k">${o.label}</span><span class="v">${fmtVal(o,o.vals[t])}</span></div>`; });
+  // F1: the hover card carries the same pre-populated full-week graph as the dock
+  n.objs.forEach(o=>{ rows+=`<div class="hc-item"><div class="hc-row"><span class="sd" style="background:${statusColor(o.stat[t])}"></span><span class="k">${o.label}</span><span class="v">${fmtVal(o,o.vals[t])}</span></div>${sparkline(o,240,18,{fluid:true})}</div>`; });
   hc.innerHTML=`<div class="hc-h"><span class="sd" style="width:11px;height:11px;background:${statusColor(ns)}"></span><span class="nm">${n.name}</span><span class="pill" style="margin-left:auto;background:${statusColor(ns)}22;color:${statusColor(ns)}">${ns}</span></div><div style="color:var(--muted);font-size:10.5px;margin:-4px 0 6px">${n.ip} · ${dstamp(t)}</div>${rows}<div class="hc-foot">Click to open details →</div>`;
   positionHover(evt); hc.classList.add('on'); },110); }
 function positionHover(evt){ const st=document.getElementById('stage').getBoundingClientRect(); let x=evt.clientX-st.left+16,y=evt.clientY-st.top+14; const w=270,h=hc.offsetHeight||180;
@@ -190,18 +217,34 @@ function closePane(id){ openPanes=openPanes.filter(x=>x!==id); byId(id).pinned=f
 function renderDock(){ document.getElementById('dockcount').textContent=openPanes.length?openPanes.length+' open':'';
   if(!openPanes.length){ dockBody.innerHTML='<div class="empty">Click any object on the map to open its live detail here. Panels stack — pin the ones you want to keep watching. Drag the left edge to resize.</div>'; return; }
   dockBody.innerHTML=''; const order=[...openPanes].sort((a,b)=>(byId(b).pinned?1:0)-(byId(a).pinned?1:0)); order.forEach(id=>dockBody.appendChild(buildPane(byId(id)))); refreshPanes(); }
+function autoGrow(ta){ ta.style.height='auto'; ta.style.height=(ta.scrollHeight+2)+'px'; }
+/* F2 · a pane renders ALL of its objectives at natural height — About first, then
+   every objective with its full-week graph and threshold caption, then the note.
+   Nothing is capped here: the DOCK BODY scrolls (see .dock-body in styles.css). */
 function buildPane(n){ const t=cur,ns=nodeStatus(n,t); const pane=document.createElement('div'); pane.className='pane'; pane.dataset.id=n.id;
   pane.innerHTML=`<div class="pane-h"><span class="ic">${svgIcon(n.type)}</span><div><div class="nm">${n.name}</div><div class="meta">${n.type} · ${n.ip}</div></div>
     <span class="pill" style="margin-left:8px;background:${statusColor(ns)}22;color:${statusColor(ns)}" data-role="ns">${ns}</span>
     <div class="acts"><button class="iconbtn ${n.pinned?'act':''}" data-act="pin" title="Pin">${n.pinned?'★':'☆'}</button><button class="iconbtn" data-act="close" title="Close">✕</button></div></div>
-    <div class="pane-body"><div data-role="objs"></div><div class="notes"><label>Note / label for this object</label><textarea placeholder="e.g. YESC advice-file cycle 14:00–15:00…">${n.note.replace(/</g,'&lt;')}</textarea></div></div>`;
+    <div class="pane-body">
+      <div class="about"><label>About this object <span class="aff">✎ click to edit</span></label>
+        <textarea class="abouttx" data-role="about" placeholder="Describe what this object does and who depends on it…">${esc(n.about)}</textarea></div>
+      <div data-role="objs"></div>
+      <div class="notes"><label>Note / label for this object</label><textarea data-role="note" placeholder="e.g. YESC advice-file cycle 14:00–15:00…">${esc(n.note)}</textarea></div>
+    </div>`;
   pane.querySelector('[data-act="close"]').onclick=()=>closePane(n.id);
   pane.querySelector('[data-act="pin"]').onclick=()=>{ n.pinned=!n.pinned; renderDock(); paint(); };
-  pane.querySelector('textarea').addEventListener('input',e=>{ n.note=e.target.value; paint(); });
-  fillObjs(pane,n); return pane; }
+  const nt=pane.querySelector('[data-role="note"]');
+  nt.addEventListener('input',e=>{ n.note=e.target.value; autoGrow(e.target); paint(); });
+  const ab=pane.querySelector('[data-role="about"]');
+  ab.addEventListener('input',e=>{ n.about=e.target.value; autoGrow(e.target); });
+  fillObjs(pane,n);
+  // size the two free-text fields once the pane is in the DOM and has a width
+  requestAnimationFrame(()=>{ autoGrow(ab); autoGrow(nt); });
+  return pane; }
 function fillObjs(pane,n){ const t=cur,box=pane.querySelector('[data-role="objs"]'); box.innerHTML='';
   n.objs.forEach(o=>{ const d=document.createElement('div'); d.className='obj'; const thr=o.dir==='hi'?`warn ≥ ${o.warn} · crit ≥ ${o.crit}`:`warn ≤ ${o.warn} · crit ≤ ${o.crit}`;
-    d.innerHTML=`<div class="obj-h"><span class="sd" style="background:${statusColor(o.stat[t])}"></span><span class="k">${o.label}</span><span class="v">${fmtVal(o,o.vals[t])}</span></div><div class="sub">${sparkline(o,Math.max(180,parseInt(getComputedStyle(document.documentElement).getPropertyValue('--dockW'))-150),30)}<span class="thr">${thr}</span></div>`; box.appendChild(d); }); }
+    d.innerHTML=`<div class="obj-h"><span class="sd" style="background:${statusColor(o.stat[t])}"></span><span class="k">${o.label}</span><span class="v">${fmtVal(o,o.vals[t])}</span></div>`+
+      `<div class="sub">${sparkline(o,320,34,{fluid:true})}</div><div class="thr">${thr}</div>`; box.appendChild(d); }); }
 function refreshPanes(){ if(!openPanes.length)return; dockBody.querySelectorAll('.pane').forEach(pane=>{ const n=byId(pane.dataset.id),ns=nodeStatus(n,cur); const pill=pane.querySelector('[data-role="ns"]'); if(pill){pill.textContent=ns;pill.style.background=statusColor(ns)+'22';pill.style.color=statusColor(ns);} fillObjs(pane,n); }); }
 function svgIcon(type){ return `<svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">${ICON[type]||ICON.app}</svg>`; }
 function markSelection(){ NODES.forEach(n=>{ const on=n.id===sel; n.el.classList.toggle('sel',on); n.el.querySelector('.selring').style.display=on?'':'none'; });
@@ -215,30 +258,57 @@ function fmtDur(steps){ const m=steps*STEP_MIN; if(m<60)return m+'m'; const h=Ma
 function ago(idx){ const st=cur-idx; if(st<=0)return 'now'; return fmtDur(st)+' ago'; }
 function sevW(s){ return s==='crit'?1000:s==='warn'?100:0; }
 function chip(s){ return `<span class="sevchip ${s}">${s}</span>`; }
-function sinceIdx(o,t){ let i=t; while(i>0&&o.stat[i-1]!=='ok')i--; return i; }
-
-// daily aggregate up to cur
-function dailyRows(upto){ const rows=[]; ALLOBJ.forEach(({n,o})=>{ let down=0,worst='ok',first=-1,last=-1;
-  for(let i=0;i<=upto;i++){ if(o.stat[i]!=='ok'){ down++; worst=worse(worst,o.stat[i]); if(first<0)first=i; last=i; } }
-  if(down>0){ const ev=o.eps.filter(e=>e.start<=upto).length; rows.push({n,o,down,worst,first,last,ev}); } });
-  return rows; }
-// windowed aggregate (last W steps)
-function windowRows(upto,W){ const lo=Math.max(0,upto-W+1); const rows=[]; ALLOBJ.forEach(({n,o})=>{ let down=0,worst='ok',first=-1,last=-1;
-  for(let i=lo;i<=upto;i++){ if(o.stat[i]!=='ok'){ down++; worst=worse(worst,o.stat[i]); if(first<0)first=i; last=i; } }
-  if(down>0){ const ev=o.eps.filter(e=>e.start>=lo&&e.start<=upto).length; rows.push({n,o,down,worst,first,last,ev}); } });
-  return rows; }
-// current / recovered (5-min)
-function fiveRows(t){ const rows=[]; ALLOBJ.forEach(({n,o})=>{ const s=o.stat[t];
-  if(s!=='ok'){ const si=sinceIdx(o,t); rows.push({n,o,sev:s,since:si,status:'Active',key:si}); }
-  else if(t>0&&o.stat[t-1]!=='ok'){ let si=t-1; while(si>0&&o.stat[si-1]!=='ok')si--; rows.push({n,o,sev:o.stat[t-1],since:si,status:'Recovered',key:t}); } });
-  rows.sort((a,b)=>b.key-a.key); return rows; }
 const WSTEPS={'5m':1,'15m':3,'1h':12,'3h':36,'6h':72,'12h':144,'24h':288,'2d':576,'7d':2016};   // E5
 function winLabel(v){ return {'5m':'5 min','15m':'15 min','1h':'1 hour','3h':'3 hours','6h':'6 hours','12h':'12 hours','24h':'24 hours','2d':'2 days','7d':'7 days'}[v]||v; }
-function recentRows(t,W){ const lo=Math.max(0,t-W+1),rows=[]; ALLOBJ.forEach(({n,o})=>{ o.eps.forEach(e=>{ if(e.end>=lo&&e.start<=t){ const active=(t>=e.start&&t<=e.end); rows.push({n,o,sev:e.worst,since:e.start,endIdx:e.end,active,key:active?1e9:e.end}); } }); }); rows.sort((a,b)=>(b.key-a.key)||(b.since-a.since)); return rows.slice(0,80); }
+
+/* ---------- F4 · WINDOW CLAMP -------------------------------------------------
+ * A table window ending at t covers exactly [max(0,t-W+1) .. t]. Every figure a
+ * row reports is now derived from ONE walk of that span, via episodes CLIPPED to
+ * it — so downtime, event count, first/last seen and worst severity are mutually
+ * consistent and can never quote a step outside the window.
+ *
+ * Previously `down` was counted inside the window but `ev` was counted from the
+ * whole-week o.eps by START index, and table B admitted any episode merely
+ * OVERLAPPING the window while reporting its true (out-of-window) start and end.
+ * That is how history from other days leaked into a short window: a row could
+ * show downtime with events 0, an age far longer than the window itself, or an
+ * end index in the future relative to t.
+ *
+ * o.eps (unclipped, whole week) is retained — the incident popup and the
+ * sparkline tint legitimately need the real episode extent.                    */
+function clipEps(o,lo,hi){ const r=[]; let s=null;
+  for(let i=lo;i<=hi;i++){ const st=o.stat[i];
+    if(st&&st!=='ok'){ if(!s)s={start:i,worst:st,end:i}; else { s.worst=worse(s.worst,st); s.end=i; } }
+    else if(s){ r.push(s); s=null; } }
+  if(s)r.push(s);
+  /* Aggregates use the CLIPPED extent; "Since" in table B is the episode's real
+     start, which is a property of the event rather than of the window — so carry
+     the true extent too and mark rows whose event began before the window. */
+  r.forEach(e=>{ const src=o.eps.find(E=>E.start<=e.start&&E.end>=e.end);
+    e.srcStart=src?src.start:e.start; e.srcEnd=src?src.end:e.end;
+    e.truncStart=e.srcStart<lo; });
+  return r; }
+let _winCache={key:null,rows:null};
+function windowScan(upto,W){ const key=upto+'|'+W; if(_winCache.key===key) return _winCache.rows;
+  const lo=Math.max(0,upto-W+1), rows=[];
+  ALLOBJ.forEach(({n,o})=>{ const eps=clipEps(o,lo,upto); if(!eps.length)return;
+    let down=0,worst='ok'; eps.forEach(e=>{ down+=e.end-e.start+1; worst=worse(worst,e.worst); });
+    rows.push({n,o,lo,hi:upto,eps,down,worst,ev:eps.length,first:eps[0].start,last:eps[eps.length-1].end}); });
+  _winCache={key,rows}; return rows; }
+// callers sort/filter freely — hand out a shallow copy, keep the scan cached
+function windowRows(upto,W){ return windowScan(upto,W).slice(); }
+function recentRows(t,W){ const rows=[];
+  windowScan(t,W).forEach(r=>{ r.eps.forEach(e=>{ const active=(e.end===t && r.o.stat[t]!=='ok');
+    // endIdx never runs past t — a windowed view cannot quote the future
+    rows.push({n:r.n,o:r.o,sev:e.worst,since:e.srcStart,endIdx:e.end,truncStart:e.truncStart,active,key:active?1e9:e.end}); }); });
+  rows.sort((a,b)=>(b.key-a.key)||(b.since-a.since)); return rows.slice(0,80); }
 
 function tableEmpty(msg,warn){ return `<div class="tbl-empty ${warn?'warnc':''}">${msg}</div>`; }
-function rowClick(id){ return `onclick="tableRowClick('${id}')"`; }
-window.tableRowClick=function(id){ const n=byId(id); openPane(id); focusNode(n); };
+function esc(s){ return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+/* rows carry the object + indicator + originating window so a click can both
+   focus the node (as before) and open the incident panel keyed to that cell */
+function rowAttrs(id,label,W){ return `data-nid="${esc(id)}" data-ind="${esc(label)}" data-w="${W}"`; }
+window.tableRowClick=function(id){ const n=byId(id); if(n){ openPane(id); focusNode(n); } };
 
 function renderTableA(){
   const W=WSTEPS[document.getElementById('aWin').value], rankBy=document.getElementById('aRank').value;
@@ -249,7 +319,7 @@ function renderTableA(){
   const wrap=document.getElementById('aWrap');
   if(!rows.length){ wrap.innerHTML=tableEmpty('✓ No errors in window'); return; }
   let h='<table class="dt"><thead><tr><th>Object</th><th>Indicator</th><th>Sev</th><th class="num">Events</th><th class="num">Downtime</th><th>Last</th><th>7d</th></tr></thead><tbody>';
-  rows.forEach(r=>{ h+=`<tr ${rowClick(r.n.id)}><td class="objcell">${r.n.name}</td><td>${r.o.label}</td><td>${chip(r.worst)}</td><td class="num">${r.ev}</td><td class="num">${fmtDur(r.down)}</td><td title="${dstamp(r.last)}">${ago(r.last)}</td><td>${sparkline(r.o,88,20)}</td></tr>`; });
+  rows.forEach(r=>{ h+=`<tr ${rowAttrs(r.n.id,r.o.label,W)}><td class="objcell">${r.n.name}</td><td>${r.o.label}</td><td>${chip(r.worst)}</td><td class="num">${r.ev}</td><td class="num">${fmtDur(r.down)}</td><td title="${dstamp(r.last)}">${ago(r.last)}</td><td>${sparkline(r.o,88,20)}</td></tr>`; });
   wrap.innerHTML=h+'</tbody></table>';
 }
 let prevBKeys=new Set();
@@ -262,8 +332,12 @@ function renderTableB(){
   const nowKeys=new Set();
   rows.forEach(r=>{ const o=r.o; const vIdx=r.active?cur:r.endIdx; const lim=r.sev==='crit'?o.crit:o.warn; const cmp=o.dir==='hi'?'>':'<'; const rk=r.n.id+'|'+o.label+'|'+r.since; nowKeys.add(rk);
     const isNew=!prevBKeys.has(rk); const stCol=r.active?statusColor(r.sev):'var(--ok)'; const stTxt=r.active?'Active':'Recovered';
+    // rows only appear if the episode overlaps the window; "⋯" marks one that was
+    // already running when the window opened (its counted downtime is clipped)
     const ageTxt=r.active?(fmtDur(cur-r.since)||'0m'):('ended '+ago(r.endIdx));
-    h+=`<tr class="${isNew?'flash':''}" ${rowClick(r.n.id)}><td title="${dstamp(r.since)}">${dstamp(r.since)}</td><td>${ageTxt}</td><td class="objcell">${r.n.name}</td><td>${o.label}</td><td>${chip(r.sev)}</td><td>${fmtVal(o,o.vals[vIdx])} ${cmp} ${lim}</td><td class="num">${o.vals[vIdx]}</td><td style="color:${stCol}">${stTxt}</td></tr>`; });
+    const sinceTxt=(r.truncStart?'⋯ ':'')+dstamp(r.since);
+    const sinceTip=r.truncStart?('began '+dstamp(r.since)+' — before this window opened'):dstamp(r.since);
+    h+=`<tr class="${isNew?'flash':''}" ${rowAttrs(r.n.id,o.label,W)}><td title="${esc(sinceTip)}">${sinceTxt}</td><td>${ageTxt}</td><td class="objcell">${r.n.name}</td><td>${o.label}</td><td>${chip(r.sev)}</td><td>${fmtVal(o,o.vals[vIdx])} ${cmp} ${lim}</td><td class="num">${o.vals[vIdx]}</td><td style="color:${stCol}">${stTxt}</td></tr>`; });
   wrap.innerHTML=h+'</tbody></table>'; prevBKeys=nowKeys;
 }
 const C_COLS=[['obj','Object'],['ind','Indicator'],['sev','Severity'],['val','Value'],['thr','Trigger'],['events','Events'],['down','Downtime'],['last','Last seen'],['since','First seen']];
@@ -280,7 +354,7 @@ function renderTableC(){
   if(!rows.length){ wrap.innerHTML=tableEmpty(sev==='all'?'✓ Nothing to show for this window':'✓ No '+sev+' items',sev!=='all'); return; }
   const cols=C_COLS.filter(c=>cShow[c[0]]);
   let h='<table class="dt"><thead><tr>'; cols.forEach(c=>{ const num=['val','events','down'].includes(c[0]); const active=cSort.key===c[0]; h+=`<th class="${num?'num':''}" onclick="cSortBy('${c[0]}')">${c[1]} <span class="ar">${active?(cSort.dir<0?'▼':'▲'):''}</span></th>`; }); h+='</tr></thead><tbody>';
-  rows.forEach(r=>{ const o=r.o; const lim=r.worst==='crit'?o.crit:o.warn; const cmp=o.dir==='hi'?'>':'<'; h+=`<tr ${rowClick(r.n.id)}>`;
+  rows.forEach(r=>{ const o=r.o; const lim=r.worst==='crit'?o.crit:o.warn; const cmp=o.dir==='hi'?'>':'<'; h+=`<tr ${rowAttrs(r.n.id,o.label,W)}>`;
     cols.forEach(c=>{ const k=c[0]; let v='';
       if(k==='obj')v=`<span class="objcell">${r.n.name}</span>`; else if(k==='ind')v=o.label; else if(k==='sev')v=chip(r.worst);
       else if(k==='val')v=`<span>${o.vals[cur]}</span>`; else if(k==='thr')v=`${fmtVal(o,o.vals[cur])} ${cmp} ${lim}`;
@@ -291,6 +365,75 @@ function renderTableC(){
 }
 window.cSortBy=function(k){ if(cSort.key===k)cSort.dir*=-1; else {cSort.key=k;cSort.dir=-1;} renderTableC(); };
 function renderTables(){ if(document.getElementById('bottom').classList.contains('closed'))return; renderTableA(); renderTableB(); renderTableC(); }
+
+/* ===================== F3 · INCIDENT / RCA PANEL =====================
+ * Left slide-in mirroring the right dock. Clicking a table row focuses the node
+ * on the map (unchanged) AND opens this panel for that object · indicator, keyed
+ * into ADEPTIO_RCA. One at a time; ✕ or Esc closes. Window stats come from the
+ * window of the table the row was clicked in, so they agree with the row.      */
+const rcaPanel=document.getElementById('rcapanel'), rcaBody=document.getElementById('rcabody');
+let rcaOpen=null;
+function closeRCA(){ rcaOpen=null; rcaPanel.classList.remove('open'); rcaPanel.setAttribute('aria-hidden','true'); document.body.classList.remove('rca-open'); }
+function openRCA(nid,label,W){ const n=byId(nid); if(!n)return; const o=n.objs.find(x=>x.label===label); if(!o)return;
+  rcaOpen={nid,label,W:W||WSTEPS[A_DEFAULT_WIN]};
+  rcaPanel.classList.add('open'); rcaPanel.setAttribute('aria-hidden','false'); document.body.classList.add('rca-open'); renderRCA(); }
+function rcaSec(num,title,inner){ return `<section class="rsec"><h4><span class="rn">${num}</span>${title}</h4>${inner}</section>`; }
+function rcaList(items,cls){ return items&&items.length?`<ul class="rlist ${cls||''}">${items.map(x=>`<li>${esc(x)}</li>`).join('')}</ul>`:'<div class="rnone">—</div>'; }
+function renderRCA(){ if(!rcaOpen)return;
+  const n=byId(rcaOpen.nid), o=n&&n.objs.find(x=>x.label===rcaOpen.label);
+  if(!n||!o){ closeRCA(); return; }
+  const W=rcaOpen.W, t=cur;
+  const row=windowScan(t,W).find(r=>r.n.id===n.id&&r.o.label===o.label);
+  const meta=rcaNode(n.id)||{}, ind=rcaInd(n.id,o.label)||{}, own=meta.owner||{};
+  const sev=row?row.worst:o.stat[t];
+  // episode to tint: the one covering t, else the last one inside the window,
+  // else the most recent whole-series episode before t
+  let ep=null;
+  if(row&&row.eps.length) ep=row.eps.find(e=>t>=e.start&&e.end>=t)||row.eps[row.eps.length-1];
+  else if(o.eps.length){ const past=o.eps.filter(e=>e.start<=t); ep=past.length?past[past.length-1]:null; }
+  const lim=(sev==='crit')?o.crit:o.warn, cmp=(o.dir==='hi')?'>':'<';
+  const trigIdx=ep?clamp(t,ep.start,ep.end):t;
+
+  const stat=`<div class="rstats">
+     <div><span class="rk">Events</span><span class="rv">${row?row.ev:0}</span></div>
+     <div><span class="rk">Downtime</span><span class="rv">${row?fmtDur(row.down):'0m'}</span></div>
+     <div><span class="rk">Last seen</span><span class="rv">${row?ago(row.last):'—'}</span></div>
+     <div><span class="rk">Trigger</span><span class="rv">${fmtVal(o,o.vals[trigIdx])} <span class="rmut">${cmp} ${lim}</span></span></div>
+   </div>`;
+  const s1=rcaSec(1,'Incident',
+    `<div class="rhead"><span class="robj">${esc(n.name)}</span><span class="rind">${esc(o.label)}</span>${chip(sev)}</div>
+     <div class="rwin">window ${winLabel(Object.keys(WSTEPS).find(k=>WSTEPS[k]===W)||W+' steps')} ending ${dstamp(t)}</div>
+     ${stat}
+     <div class="rspark">${sparkline(o,320,44,{fluid:true,tint:ep?{start:ep.start,end:ep.end,sev:ep.worst||sev}:null})}</div>
+     <div class="rcap">${ep?('episode '+dstamp(ep.start)+' → '+dstamp(ep.end)+' (tinted)'):'no episode in this window'}</div>`);
+
+  const chips=(meta.systems||[]).map(id=>{ const nb=byId(id); return `<button class="syschip" data-sys="${esc(id)}">${esc(nb?nb.name:id)}</button>`; }).join('');
+  const s2=rcaSec(2,'Relevant system / page',
+    `<div class="rpage">${esc(meta.page||'—')}</div>
+     <div class="rchips">${chips||'<span class="rnone">—</span>'}</div>
+     <a class="rflow" href="flow-instrumentation.html">flow map &rarr;</a>`);
+
+  const s3=rcaSec(3,'Recommended checks',
+    rcaList(ind.checks)+`<h5>Questions to ask</h5>`+rcaList(ind.questions,'q'));
+
+  const s4=rcaSec(4,'Owner',
+    `<div class="rown"><div><span class="rk">Team</span><span class="rv">${esc(own.team||'—')}</span></div>
+      <div><span class="rk">Name</span><span class="rv">${esc(own.name||'—')}</span></div>
+      <div><span class="rk">Channel</span><span class="rv">${esc(own.channel||'—')}</span></div></div>
+     <div class="resc"><span class="rk">Escalate</span> ${esc(own.escalate||'—')}</div>`);
+
+  rcaBody.innerHTML=s1+s2+s3+s4;
+  rcaBody.querySelectorAll('.syschip').forEach(b=>b.onclick=()=>{ const nb=byId(b.dataset.sys); if(!nb)return; sel=nb.id; markSelection(); focusNode(nb); });
+}
+document.getElementById('rcaclose').onclick=closeRCA;
+/* one delegated handler for all three tables: focus the node, open the pane, and
+   open the incident panel for the exact object · indicator that was clicked */
+document.getElementById('btables').addEventListener('click',e=>{
+  const tr=e.target.closest('tbody tr'); if(!tr||!tr.dataset.nid)return;
+  const n=byId(tr.dataset.nid); if(!n)return;
+  openPane(n.id); focusNode(n);
+  if(tr.dataset.ind) openRCA(n.id,tr.dataset.ind,parseInt(tr.dataset.w,10)||WSTEPS[A_DEFAULT_WIN]);
+});
 
 /* ===================== PAN / ZOOM / DRAG (grid snap) ===================== */
 const canvas=document.getElementById('canvas'),stage=document.getElementById('stage'); const SNAP=20;
@@ -385,16 +528,19 @@ document.getElementById('theme').onclick=()=>{ const c=document.documentElement.
 document.getElementById('hintx').onclick=()=>document.getElementById('hint').style.display='none';
 document.getElementById('search').addEventListener('keydown',e=>{ if(e.key!=='Enter')return; const q=e.target.value.toLowerCase().trim(); const n=NODES.find(x=>x.name.toLowerCase().includes(q)||x.id.includes(q)); if(n){ openPane(n.id); focusNode(n); } });
 document.getElementById('closeall').onclick=()=>{ [...openPanes].forEach(closePane); };
-window.addEventListener('keydown',e=>{ if(e.code==='Space'&&e.target.tagName!=='TEXTAREA'&&e.target.tagName!=='INPUT'){ e.preventDefault(); playing?stop():play(); } if(e.key==='Escape'){ sel=null; markSelection(); } });
+window.addEventListener('keydown',e=>{ if(e.code==='Space'&&e.target.tagName!=='TEXTAREA'&&e.target.tagName!=='INPUT'){ e.preventDefault(); playing?stop():play(); }
+  if(e.key==='Escape'){ if(rcaOpen){ closeRCA(); return; } sel=null; markSelection(); } });
 function resetAll(){ stop();
-  NODES.forEach((n,i)=>{ n.x=ORIG[i].x; n.y=ORIG[i].y; n.note=''; n.pinned=false; if(n.el)n.el.setAttribute('transform',`translate(${n.x},${n.y})`); });
-  openPanes=[]; sel=null; dock.classList.remove('open'); renderDock(); markSelection();
+  // Reset restores the seeded "About" text as well as clearing notes (F2c)
+  NODES.forEach((n,i)=>{ n.x=ORIG[i].x; n.y=ORIG[i].y; n.note=''; n.pinned=false; n.about=aboutDefault(n.id); if(n.el)n.el.setAttribute('transform',`translate(${n.x},${n.y})`); });
+  openPanes=[]; sel=null; dock.classList.remove('open'); closeRCA(); renderDock(); markSelection();
   document.documentElement.style.setProperty('--dockW','390px'); document.documentElement.style.setProperty('--bh','252px');
   document.getElementById('aWin').value=A_DEFAULT_WIN; document.getElementById('aRank').value='sev'; document.getElementById('bWinSel').value='5m'; document.getElementById('cWin').value=C_DEFAULT_WIN; document.getElementById('cSev').value='all'; document.getElementById('cNode').value=C_DEFAULT_NODE;
   cShow={obj:1,ind:1,sev:1,val:1,thr:1,events:0,down:1,last:1,since:0}; cSort={key:'sev',dir:-1};
   document.getElementById('tblA').style.width='34%'; document.getElementById('tblA').style.flex=''; document.getElementById('tblB').style.width='34%'; document.getElementById('tblB').style.flex='';
-  toggleTables(true); si=0; document.getElementById('speed').textContent='1×';
-  document.getElementById('hint').style.display=''; cur=0; paintLinksOnly(); paint(); fit();
+  // move the clock BEFORE re-opening the tables, so they never render a stale window
+  cur=0; toggleTables(true); si=0; document.getElementById('speed').textContent='1×';
+  document.getElementById('hint').style.display=''; paintLinksOnly(); paint(); fit();
 }
 document.getElementById('resetbtn').onclick=resetAll;
 
@@ -403,6 +549,9 @@ document.getElementById('resetbtn').onclick=resetAll;
 buildLinks(); buildNodes(); buildLegend(); drawBands(); paint(); fit();
 
 /* deep link — index.html#t=<step> lands the timeline on one moment, paused.
-   Used by the fault-fingerprint matrix on flow-instrumentation.html. */
-(function(){ const m=/^#t=(\d+)$/.exec(location.hash||''); if(!m)return;
-  stop(); setCur(clamp(parseInt(m[1],10),0,N-1)); })();
+   Used by the fault-fingerprint matrix on flow-instrumentation.html. Also honoured
+   on hashchange, so a second #t= link inside the same document still seeks. */
+function seekHash(){ const m=/^#t=(\d+)$/.exec(location.hash||''); if(!m)return;
+  stop(); setCur(clamp(parseInt(m[1],10),0,N-1)); }
+window.addEventListener('hashchange',seekHash);
+seekHash();
