@@ -2,14 +2,15 @@
 
 > **© Adeptio — public demonstration template.** All data is mock — regenerated in-browser from a fixed seed; every figure is illustrative. Not affiliated with or describing any named institution.
 
-Two linked pages that make one argument: a Pay Bill journey at a Myanmar
-commercial bank can be watched end to end, and when it breaks the checks
-themselves name the layer and the team.
+Three linked pages that make one argument: a Pay Bill journey at a Myanmar
+commercial bank can be watched end to end, when it breaks the checks themselves
+name the layer and the team, and the case that follows is already on a board.
 
 | | Page | What it is |
 |---|---|---|
 | 1 | [`index.html`](index.html) | **Live status dashboard.** 16 nodes, 17 links, a deterministic 7-day mock week (2016 steps × 5 min) with nine incident windows, three live synthesis tables, and a scrubable timeline. |
 | 2 | [`flow-instrumentation.html`](flow-instrumentation.html) | **The use case, fully instrumented.** Pay Bill top to bottom — the software each step crosses, the hardware it rides, the 52 health checks that watch both, and five fault fingerprints that turn a check pattern into a routed ticket. |
+| 3 | [`incident-trace.html`](incident-trace.html) | **Incident Trace portal.** Where the routed ticket lands: a small board / list / detail ticketing surface over the same nine incident windows — 20 seeded cases, drag-to-transition, comments, linked issues, create. Editable; edits persist to `localStorage` in your browser only. |
 
 Vanilla HTML + CSS + SVG + JS. No framework, no build step, no dependencies, no
 network calls at runtime.
@@ -75,6 +76,11 @@ Step index is minutes-since-start ÷ 5, i.e. `step = (day - 1) * 288 + (hh * 60 
 An out-of-range or malformed `#t=` is ignored and the dashboard opens live at
 the end of the week, as it does without a hash.
 
+The portal has the mirror-image trick: `incident-trace.html#INC-1030` opens that
+ticket's detail overlay directly. The three pages therefore link in a loop —
+dashboard incident panel → *Incident Trace ▸* → the case that covers the window
+you are looking at → *view on dashboard →* → the dashboard back at that moment.
+
 ## Repo layout
 
 | Path | Role |
@@ -84,17 +90,26 @@ the end of the week, as it does without a hash.
 | `assets/styles.css` | All page-1 styling, both themes. |
 | `assets/engine.js` | Page-1 engine: hydration, rendering, interaction, tables, timeline. |
 | `assets/flow.css` | Page-2 global stylesheet (extracted from that page's `<head>`). |
+| `incident-trace.html` | Page 3 — markup and boot order only, same pattern as page 1. |
+| `assets/portal.css` | Page-3 styling. Reuses the page-1 design tokens; everything is prefixed `.p-`. |
+| `assets/portal.js` | Page-3 engine: board, list, detail overlay, create, `localStorage` persistence. |
+| `data/tickets.js` | Page-3 seed: 20 tickets keyed `INC-10xx`, plus `byWindow` mapping each incident window to the case that carries it. Read by page 1 too, for the incident panel's trace card. |
 | `data/manifest.js` | Topology + objective definitions. No time series. |
+| `data/rcameta.js` | RCA metadata behind the incident panel: per-object description / customer page / neighbour systems / owner, plus first checks + questions for all 61 objectives. |
 | `data/README.md` | The two data modes, and the live-feed contract. |
 | `data/log_day1..7.js` | *Optional.* Materialised week, one file per mock day — not committed; in the release zip. |
 | `docs/SPEC-Dashboard-v1.2.md` | Engine spec — layout, interactions, verification checklist (§9). |
-| `docs/SPEC-Dashboard-v1.3-Addendum.md` | v1.3 Pay Bill delta on top of that spec. |
+| `docs/SPEC-Dashboard-v1.2.1-Addendum.md` | v1.2.1 Pay Bill delta on top of that spec. |
 | `build_singlefile.py` | Re-inlines page 1 into one portable HTML file. |
 | `.nojekyll` | Serve verbatim on GitHub Pages. |
 
 `index.html` loads its scripts in exactly this order, and the order matters:
 
 1. `data/manifest.js` — defines `window.ADEPTIO_DATA`
+1b. `data/rcameta.js` — defines `window.ADEPTIO_RCA` (optional: the engine runs
+   without it, the incident panel simply shows blank copy)
+1c. `data/tickets.js` — defines `window.ADEPTIO_TICKETS` (optional: without it the
+   incident panel's Incident Trace row reports no linked case)
 2. `data/log_day1.js` … `log_day7.js` — *optional*, each appends one day to
    `window.ADEPTIO_LOGS`. Absent in this repo; the tags sit commented between the
    `ADEPTIO-LOGS-START` / `-END` markers, ready to switch on.

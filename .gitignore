@@ -8,3 +8,6 @@ __pycache__/
 # not source: the engine rebuilds the identical week from ADEPTIO_SEED. They ship
 # in the release zip, not in the repo. See data/README.md.
 data/log_day*.js
+
+# build product of build_singlefile.py
+adeptio_paybill_live_dashboard.html
