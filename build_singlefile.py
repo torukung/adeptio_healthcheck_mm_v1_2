@@ -10,9 +10,14 @@ like the site (same engine, same load order, same week).
 
 Two things are deliberately left out of the single file:
 
-  * anything between <!--SF-STRIP-START--> and <!--SF-STRIP-END--> — site-only
-    chrome such as the page-2 link chip, which would point at a file that is not
-    shipped alongside the standalone build;
+  * anything between <!--SF-STRIP-START--> and <!--SF-STRIP-END--> in index.html,
+    and between the JS-comment form /*SF-STRIP-START*/ ... /*SF-STRIP-END*/ in an
+    inlined script — site-only chrome such as the page-2/page-3 nav chips and the
+    "Open in Incident Trace Portal" deep link the RCA panel builds, all of which
+    would point at files that are not shipped alongside the standalone build. The
+    Incident Trace status card itself is kept: the ticket data is inlined, so the
+    single file can still say which case covers the incident, it just cannot
+    navigate to it;
   * the materialised day logs (data/log_day*.js, ~1.3 MB). The engine's seeded
     generator (ADEPTIO_SEED, mulberry32) rebuilds the identical canonical week in
     the browser, so embedding them would only make the file 20x larger for the
@@ -33,6 +38,10 @@ OUT  = pathlib.Path(sys.argv[1]) if len(sys.argv) > 1 else HERE / 'adeptio_paybi
 LINK = re.compile(r'^[ \t]*<link[^>]*rel="stylesheet"[^>]*href="([^"]+)"[^>]*/?>[ \t]*$')
 SCPT = re.compile(r'^[ \t]*<script[^>]*src="([^"]+)"[^>]*>\s*</script>[ \t]*$')
 STRIP = re.compile(r'<!--SF-STRIP-START-->.*?<!--SF-STRIP-END-->', re.S)
+# JS-comment form of the same marker, for cross-page links built inside engine.js.
+# Authored so that deleting the span leaves valid JS (the markers wrap a leading
+# "+ <expr>" of a string concatenation).
+STRIPJS = re.compile(r'/\*SF-STRIP-START\*/.*?/\*SF-STRIP-END\*/', re.S)
 DAYLOG = re.compile(r'(^|/)log_day\d+\.js$')
 LOGBLOCK = re.compile(r'<!--ADEPTIO-LOGS-START.*?<!--ADEPTIO-LOGS-END-->', re.S)
 
@@ -67,6 +76,8 @@ for line in src.split('\n'):
         skipped.append(m.group(1)); continue
     if m:
         js, p = read(m.group(1))
+        js, njs = STRIPJS.subn('', js)        # drop cross-page links baked into JS
+        nstripped += njs
         out += ['<script>', '/* inlined from %s */' % m.group(1), js.rstrip('\n'), '</script>']
         inlined.append((m.group(1), p.stat().st_size)); continue
     out.append(line)

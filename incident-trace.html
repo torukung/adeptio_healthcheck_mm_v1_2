@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
+<link rel="icon" href="data:,"/>
+<title>Adeptio Incident Trace &middot; Portal — Pay Bill</title>
+<!-- markup + boot only. Tokens come from the dashboard stylesheet; everything
+     portal-specific is in assets/portal.css. Plain <link>/<script src> so this
+     opens straight off disk (file://). -->
+<link rel="stylesheet" href="assets/styles.css"/>
+<link rel="stylesheet" href="assets/portal.css"/>
+</head>
+<body>
+<div class="p-shell">
+
+  <header class="p-top">
+    <div class="p-word">adeptio<i>.</i></div>
+    <div class="p-title">INCIDENT TRACE &middot; PORTAL</div>
+    <div class="p-proj" id="projchip">INC</div>
+    <div class="p-sp"></div>
+    <div class="p-search">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4-4"/></svg>
+      <input id="q" placeholder="Search key or summary&hellip;" autocomplete="off" aria-label="Search tickets"/>
+    </div>
+    <button class="p-create" id="createbtn">Create</button>
+    <a class="p-link" href="index.html">&larr; Live dashboard</a>
+    <a class="p-link" href="flow-instrumentation.html">flow map &rarr;</a>
+    <button class="p-ghost" id="themebtn" title="Toggle light / dark">Light</button>
+  </header>
+
+  <div class="p-rail">
+    <div class="p-seg" role="tablist" aria-label="View">
+      <button id="vBoard" class="on" role="tab" aria-selected="true">Board</button>
+      <button id="vList" role="tab" aria-selected="false">List</button>
+    </div>
+    <span style="width:6px"></span>
+    <button class="p-chip on" data-f="all">All<span class="n" data-c="all"></span></button>
+    <button class="p-chip" data-f="open">Open<span class="n" data-c="open"></span></button>
+    <button class="p-chip" data-f="critical">Critical<span class="n" data-c="critical"></span></button>
+    <button class="p-chip" data-f="major">Major<span class="n" data-c="major"></span></button>
+    <button class="p-chip" data-f="incidents">Incidents<span class="n" data-c="incidents"></span></button>
+    <button class="p-chip" data-f="tasks">Tasks<span class="n" data-c="tasks"></span></button>
+    <div class="p-sp"></div>
+    <span class="p-count" id="shown"></span>
+    <button class="p-ghost" id="resetbtn" title="Discard local changes and restore the seeded board">&#8635; Reset board</button>
+  </div>
+
+  <main class="p-main" id="main"></main>
+
+  <footer class="p-foot">
+    <b>Mock data.</b> Every ticket, comment and owner on this board is illustrative, generated to match the
+    seven-day scenario the live dashboard replays. Dates are timeline indices rendered as D1&ndash;D7 mock
+    stamps, not real dates. Edits you make here are kept in this browser only (localStorage) and never leave
+    the page &mdash; <b>Reset board</b> restores the seeded state.
+    <span id="storenote"></span>
+  </footer>
+</div>
+
+<!-- ticket detail overlay -->
+<div class="p-scrim" id="detail" role="dialog" aria-modal="true" aria-label="Ticket detail">
+  <div class="p-modal" id="detailbox"></div>
+</div>
+
+<!-- create modal -->
+<div class="p-scrim" id="createwrap" role="dialog" aria-modal="true" aria-label="Create ticket">
+  <div class="p-modal sm" id="createbox"></div>
+</div>
+
+<!-- 1 · topology + incident windows (INC / INCMETA drive the dashboard deep links) -->
+<script src="data/manifest.js"></script>
+<!-- 2 · owner roster reused verbatim for assignees -->
+<script src="data/rcameta.js"></script>
+<!-- 3 · seeded tickets -->
+<script src="data/tickets.js"></script>
+<!-- 4 · portal -->
+<script src="assets/portal.js"></script>
+</body>
+</html>

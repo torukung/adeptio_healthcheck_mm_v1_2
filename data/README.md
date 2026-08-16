@@ -30,7 +30,7 @@ enable: drop them in here and delete the two `<!--` / `-->` delimiters between t
 seeded generator, so the switch changes nothing on screen.
 
 `build_singlefile.py` never embeds them; the standalone build regenerates the week
-from the seed instead (~140 KB, most of which is `rcameta.js`).
+from the seed instead (~178 KB, most of which is `rcameta.js` + `tickets.js`).
 
 ## 3 · `rcameta.js` — RCA copy, not series
 
@@ -41,3 +41,14 @@ objectives — the content of the incident panel, and the seed text for each pan
 editable "About this object". Keys mirror `manifest.js` exactly; if you retarget
 the topology, re-key this file too. It is optional: without it the engine still
 runs and the panel simply renders blank copy.
+
+## 4 · `tickets.js` — Incident Trace seed, not series
+
+`window.ADEPTIO_TICKETS` = 20 mock tickets keyed `INC-10xx` plus a `byWindow` map
+from each incident window (`A`..`I`) to the case that carries it. Every date is a
+**timeline index**, rendered through the same `dstamp()` as the dashboard, so a
+ticket can never drift from the band that produced it; owners are reused verbatim
+from `rcameta.js`. Page 3 (`incident-trace.html`) is the whole surface; page 1
+reads only `byWindow` and the matched ticket's header fields, for the incident
+panel's Incident Trace card. Optional on page 1 — without it that row reports no
+linked case. User edits live in `localStorage["adeptio_tickets_v1"]`, never here.

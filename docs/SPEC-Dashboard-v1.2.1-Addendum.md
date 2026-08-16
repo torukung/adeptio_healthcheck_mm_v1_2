@@ -64,4 +64,40 @@ paybill_dashboard_site/
 
 v1.2's "only 5 things to change" still holds, now expressed in the site variant as: **edit `data/manifest.js` (topology + objectives + INC + INCMETA + KPI) and regenerate day logs; never touch `assets/engine.js`.** Copy lives in `index.html`.
 
-*Verified 2026-08-16 · engine v1.2.1 · scenario "Pay Bill week" · all §9 checks pass at 1600/1440/1366/1280, dark + light.*
+## 5 · Incident Trace portal (page 3)
+
+`incident-trace.html` is a deliberately small ticketing surface — a "micro JIRA" — that closes the loop the dashboard opens: a red indicator names a layer and an owner, and this page shows the case already open on it. It is a separate page with its own engine; **`assets/engine.js` is untouched by it** apart from one added section in the RCA panel.
+
+**Scope.** Recognisable core only: ticket key `INC-10xx`, the three status categories in their fixed colours (**To Do grey · In Progress blue · Done green**), one priority axis (Highest/High/Medium/Low, chevron up / bar / down), queue rows, two-column detail, comment thread, assignee + reporter avatars, status transitions. Deliberately absent: SLA timers, approvals, JQL, workflow and permission config, components/versions, time tracking, backlog and sprints — every one of them either a paid-tier concept or a named source of "Jira feels heavy".
+
+**Surface.**
+- **Board** (default) — three columns, **drag a card to a column to transition it** (pointer events, not HTML5 DnD, so it works on touch and is testable). A transition writes a history entry and sets `updated = now`.
+- **List** — queue rows: key · type icon · summary · status lozenge · priority chevron · assignee initials · relative updated.
+- **Quick-filter chips** All / Open / Critical / Major / Incidents / Tasks, plus live text search over key + summary.
+- **Detail overlay** — left: description, linked issues with relationship chips, activity (comments and history interleaved, newest last), comment composer posting as "You". Right: Details sidebar with status / priority / assignee dropdowns, reporter, labels, created + updated (relative and D-stamp), and a node chip deep-linking to `index.html#t=<window peak>`.
+- **Create** modal → next sequential key, status To Do.
+- **Persistence** — full state under `localStorage["adeptio_tickets_v1"]`, guarded by a seed fingerprint so a changed seed discards stale state. Every access is wrapped in `try/catch`; when storage throws (private mode, blocked origin) the portal silently falls back to an in-memory store for the session and says so in the footer. **Reset board** clears the key and restores the seed.
+
+**Data contract — `data/tickets.js` → `window.ADEPTIO_TICKETS`:**
+
+```
+{ project:"INC", name, now:2015,
+  tickets:[ { key, type:"incident|task|bug", major:bool, summary, desc,
+              status:"todo|inprog|done", priority:"highest|high|medium|low",
+              assignee:{name,team}|null, reporter, labels:[],
+              incKey:"A".."I"|null, node:"<nodeId>",
+              created, updated,                    // TIMELINE INDICES, rendered via dstamp()
+              comments:[{who,at,text}], history:[{at,what}],
+              links:[{rel,key}] } ],
+  byWindow:{ A:"INC-1018", … I:"INC-1036" } }        // incident window -> the case carrying it
+```
+
+Every date is a **timeline index into the same 2016-step week**, never a wall clock, so a ticket and the incident band that produced it can never drift apart. Owners are reused verbatim from `data/rcameta.js`, which also supplies the assignee dropdown roster. Nine of the twenty seeded tickets map 1:1 onto the scenario windows; the rest is ordinary operational work so the board reads lived-in.
+
+**E12 · Dashboard wiring (the only engine change).** The RCA panel's Owner section gains a collapsed **Incident Trace ▸** row. `traceTicket(o,t)` takes the clicked indicator's incident keys (`objective.inc`, string or object form), picks the window containing the cursor — else the most recent window that started before it — and resolves it through `byWindow`. Expanding slides open a mini status card: status lozenge · key · MAJOR badge · summary · assignee · updated D-stamp, plus a deep link to `incident-trace.html#KEY`. No match reports "No linked case". Top-bar nav chips on pages 1 and 2 point at the portal.
+
+**Single-file build.** `build_singlefile.py` now also honours the JS-comment form of the strip marker, `/*SF-STRIP-START*/ … /*SF-STRIP-END*/`, wrapped so that deleting the span leaves valid JS. The standalone file therefore **keeps the Incident Trace status card** (ticket data is inlined) but **drops every cross-page link**, since no portal ships beside it.
+
+---
+
+*Verified 2026-08-16 · engine v1.2.1 · scenario "Pay Bill week" · all §9 checks pass at 1600/1440/1366/1280, dark + light. Portal verified over `file://` and `http://`, storage-available and storage-blocked.*

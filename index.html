@@ -3,6 +3,7 @@
 <head>
 <meta charset="utf-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1"/>
+<link rel="icon" href="data:,"/>
 <title>Adeptio Live Status — Pay Bill · Myanmar Bank</title>
 <!-- markup + boot only. Styles, data and engine are separate files, all loaded
      with plain <link>/<script src> so this opens straight off disk (file://). -->
@@ -14,7 +15,7 @@
     <div class="brand"><div class="logo">A</div>
       <div><div class="t">Live Status — Pay&nbsp;Bill<span class="ver">v1.2.1 · Pay Bill · 7-day</span></div><div class="s">Myanmar commercial-bank template · 7-day mock data</div></div>
     </div>
-    <!--SF-STRIP-START--><a class="navchip" href="flow-instrumentation.html" title="Open the use-case flow map (page 2)">Use-case &middot; flow map &rarr;</a><!--SF-STRIP-END-->
+    <!--SF-STRIP-START--><a class="navchip main" href="incident-trace.html" title="Open the Incident Trace portal (page 3)">Incident Trace &middot; Portal &rarr;</a><a class="navchip" href="flow-instrumentation.html" title="Open the use-case flow map (page 2)">Use-case &middot; flow map &rarr;</a><!--SF-STRIP-END-->
     <div class="spacer"></div>
     <div class="summary" id="summary"></div>
     <div class="freshness"><span class="livedot" id="livedot"></span><span id="asof">as of —</span></div>
@@ -109,6 +110,9 @@
 <!-- 1b · RCA metadata: per-object description / page / systems / owner, and the
      first-checks + questions behind every "<nodeId>.<objective label>" key. -->
 <script src="data/rcameta.js"></script>
+<!-- 1c · Incident Trace tickets (page 3 seed). The dashboard only reads
+     byWindow + the matched ticket's header fields for the RCA trace card. -->
+<script src="data/tickets.js"></script>
 <!--ADEPTIO-LOGS-START
      2 · materialised week (OPTIONAL). This repo ships in SEEDED REPLAY mode: the
      engine regenerates the identical canonical week from ADEPTIO_SEED, so no day
