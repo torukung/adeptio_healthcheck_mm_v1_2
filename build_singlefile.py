@@ -19,13 +19,16 @@ Two things are deliberately left out of the single file:
     same pixels. The build therefore runs in "seeded replay" mode by design, even
     when built from the materialised variant of index.html.
 
+Everything else is inlined, including data/rcameta.js (the RCA copy behind the
+incident panel) — which is why the single file is ~140 KB rather than ~70 KB.
+
   usage:  python3 build_singlefile.py [output.html]
-  default output: ../adeptio_paybill_live_dashboard.html
+  default output: ./adeptio_paybill_live_dashboard.html (gitignored build product)
 """
 import re, sys, pathlib
 
 HERE = pathlib.Path(__file__).resolve().parent
-OUT  = pathlib.Path(sys.argv[1]) if len(sys.argv) > 1 else HERE.parent / 'adeptio_paybill_live_dashboard.html'
+OUT  = pathlib.Path(sys.argv[1]) if len(sys.argv) > 1 else HERE / 'adeptio_paybill_live_dashboard.html'
 
 LINK = re.compile(r'^[ \t]*<link[^>]*rel="stylesheet"[^>]*href="([^"]+)"[^>]*/?>[ \t]*$')
 SCPT = re.compile(r'^[ \t]*<script[^>]*src="([^"]+)"[^>]*>\s*</script>[ \t]*$')
