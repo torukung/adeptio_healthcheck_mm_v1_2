@@ -131,6 +131,8 @@ function buildNodes(){ gNodes.innerHTML=''; NODES.forEach(n=>{ const g=mk('g',{c
   const ic=mk('g',{class:'ic',transform:'translate(-11,-11) scale(0.92)'}); ic.innerHTML=ICON[n.type]||ICON.app; g.appendChild(ic);
   const lbl=mk('text',{class:'lbl',x:0,y:RING+16}); lbl.textContent=n.name; g.appendChild(lbl);
   const ip=mk('text',{class:'ip',x:0,y:RING+29}); ip.textContent=n.ip; g.appendChild(ip);
+  // third label line: how this object is polled / collected (data-driven, manifest .pm)
+  if(n.pm){ const pm=mk('text',{class:'pm',x:0,y:RING+40}); pm.textContent=n.pm; g.appendChild(pm); }
   g.appendChild(mk('circle',{class:'notebadge',r:4,cx:NR-3,cy:-NR+3,style:'display:none'}));
   g.appendChild(mk('circle',{class:'pin',r:4,cx:-NR+3,cy:-NR+3,style:'display:none'}));
   gNodes.appendChild(g); n.el=g; }); }
@@ -222,7 +224,7 @@ function autoGrow(ta){ ta.style.height='auto'; ta.style.height=(ta.scrollHeight+
    every objective with its full-week graph and threshold caption, then the note.
    Nothing is capped here: the DOCK BODY scrolls (see .dock-body in styles.css). */
 function buildPane(n){ const t=cur,ns=nodeStatus(n,t); const pane=document.createElement('div'); pane.className='pane'; pane.dataset.id=n.id;
-  pane.innerHTML=`<div class="pane-h"><span class="ic">${svgIcon(n.type)}</span><div><div class="nm">${n.name}</div><div class="meta">${n.type} · ${n.ip}</div></div>
+  pane.innerHTML=`<div class="pane-h"><span class="ic">${svgIcon(n.type)}</span><div><div class="nm">${n.name}</div><div class="meta">${n.type} · ${n.ip}${n.pm?' — '+n.pm:''}</div></div>
     <span class="pill" style="margin-left:8px;background:${statusColor(ns)}22;color:${statusColor(ns)}" data-role="ns">${ns}</span>
     <div class="acts"><button class="iconbtn ${n.pinned?'act':''}" data-act="pin" title="Pin">${n.pinned?'★':'☆'}</button><button class="iconbtn" data-act="close" title="Close">✕</button></div></div>
     <div class="pane-body">
