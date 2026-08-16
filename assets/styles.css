@@ -38,6 +38,10 @@ button{font-family:inherit;color:inherit}
   padding:4px 9px;margin-left:4px;text-decoration:none;white-space:nowrap}
 .navchip:hover{border-color:var(--chipink)}
 .navchip:focus-visible{outline:2px solid var(--chipink);outline-offset:2px}
+/* the portal is the primary cross-page destination — filled, not outlined */
+.navchip.main{color:var(--panel);background:var(--chipink);border-color:var(--chipink)}
+html[data-theme="light"] .navchip.main{color:#fff}
+.navchip.main:hover{filter:brightness(1.08)}
 .spacer{flex:1}
 .summary{display:flex;gap:8px;align-items:center}
 .scount{display:flex;align-items:center;gap:7px;background:var(--panel);border:1px solid var(--line);border-radius:999px;padding:5px 12px;font-size:13px;font-variant-numeric:tabular-nums}
@@ -178,6 +182,33 @@ svg.canvas.panning{cursor:grabbing}
 .resc{font-size:11.5px;color:var(--ink2);line-height:1.5;background:var(--panel);border:1px solid var(--line);
   border-radius:8px;padding:6px 8px}
 .resc .rk{display:block;margin-bottom:2px}
+/* F7 · Incident Trace row — collapsed by default, slides open to a mini status
+   card for the ticket that carries the incident window behind this indicator. */
+.rtrace{margin-top:9px;border-top:1px solid var(--line);padding-top:9px}
+.rtoggle{display:flex;align-items:center;gap:7px;width:100%;background:none;border:none;padding:3px 0;
+  cursor:pointer;font-size:10.5px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:var(--muted)}
+.rtoggle:hover{color:var(--ink)}
+.rtoggle .car{display:inline-block;transition:transform .16s;font-size:9px}
+.rtoggle[aria-expanded="true"] .car{transform:rotate(90deg)}
+.rtoggle .rtn{margin-left:auto;font-size:9.5px;font-weight:700;letter-spacing:0;text-transform:none;color:var(--muted)}
+.rtbody{max-height:0;overflow:hidden;transition:max-height .22s ease}
+.rtbody.open{max-height:260px}
+.rtcard{margin-top:8px;background:var(--panel);border:1px solid var(--line);border-radius:9px;padding:9px 10px}
+.rtrow{display:flex;align-items:center;gap:7px;flex-wrap:wrap;margin-bottom:6px}
+.rtlz{display:inline-flex;align-items:center;font-size:9px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;
+  border-radius:4px;padding:2px 6px;border:1px solid transparent}
+.rtlz.todo{color:var(--unk);background:rgba(139,148,163,.13);border-color:rgba(139,148,163,.34)}
+.rtlz.inprog{color:var(--maint);background:rgba(122,162,255,.14);border-color:rgba(122,162,255,.36)}
+.rtlz.done{color:var(--ok);background:rgba(45,212,167,.13);border-color:rgba(45,212,167,.34)}
+.rtkey{font-family:var(--mono);font-size:11px;font-weight:700;color:var(--ink2)}
+.rtmaj{font-size:9px;font-weight:800;letter-spacing:.06em;color:var(--crit);background:rgba(255,107,90,.14);
+  border:1px solid rgba(255,107,90,.42);border-radius:4px;padding:2px 6px}
+.rtsum{font-size:12px;color:var(--ink);line-height:1.45;margin-bottom:6px}
+.rtmeta{display:flex;gap:8px;flex-wrap:wrap;font-size:10.5px;color:var(--muted)}
+.rtmeta b{color:var(--ink2);font-weight:650}
+.rtopen{display:inline-block;margin-top:8px;font-size:11px;font-weight:700;color:var(--chipink);text-decoration:none}
+.rtopen:hover{text-decoration:underline}
+.rtnone{font-size:11.5px;color:var(--muted);line-height:1.5}
 /* keep the stage furniture clear of the panel while it is open */
 .hint,.legend{transition:left .28s}
 body.rca-open .hint,body.rca-open .legend{left:calc(var(--rcaW) + 14px)}

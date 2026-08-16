@@ -420,11 +420,57 @@ function renderRCA(){ if(!rcaOpen)return;
     `<div class="rown"><div><span class="rk">Team</span><span class="rv">${esc(own.team||'—')}</span></div>
       <div><span class="rk">Name</span><span class="rv">${esc(own.name||'—')}</span></div>
       <div><span class="rk">Channel</span><span class="rv">${esc(own.channel||'—')}</span></div></div>
-     <div class="resc"><span class="rk">Escalate</span> ${esc(own.escalate||'—')}</div>`);
+     <div class="resc"><span class="rk">Escalate</span> ${esc(own.escalate||'—')}</div>
+     ${traceRow(o,t)}`);
 
   rcaBody.innerHTML=s1+s2+s3+s4;
   rcaBody.querySelectorAll('.syschip').forEach(b=>b.onclick=()=>{ const nb=byId(b.dataset.sys); if(!nb)return; sel=nb.id; markSelection(); focusNode(nb); });
+  wireTrace();
 }
+
+/* F7 · INCIDENT TRACE ----------------------------------------------------------
+ * The RCA panel answers "what broke and who owns it"; this row answers "is there
+ * a case open on it". The clicked indicator carries one or more incident-window
+ * keys (objective.inc); we take the window that contains the cursor, else the
+ * most recent one that started before it, and resolve it through
+ * ADEPTIO_TICKETS.byWindow. Collapsed by default — it is context, not headline.*/
+const SLZ={todo:'To Do',inprog:'In Progress',done:'Done'};
+let traceExpanded=false;
+function traceTicket(o,t){
+  const T=window.ADEPTIO_TICKETS; if(!T||!T.tickets) return null;
+  const keys=!o.inc?[]:(typeof o.inc==='string'?[o.inc]:Object.keys(o.inc));
+  if(!keys.length) return null;
+  let pick=keys.find(k=>{ const w=INC[k]; return w && t>=w[0] && t<=w[w.length-1]; });
+  if(!pick){ let bs=-1; keys.forEach(k=>{ const w=INC[k]; if(w&&w[0]<=t&&w[0]>bs){ bs=w[0]; pick=k; } }); }
+  if(!pick) return null;
+  const key=T.byWindow&&T.byWindow[pick];
+  const tk=key&&T.tickets.find(x=>x.key===key);
+  return tk?{tk,incKey:pick}:null;
+}
+function traceRow(o,t){
+  const hit=traceTicket(o,t), tk=hit&&hit.tk;
+  const body = tk
+    ? `<div class="rtcard">
+         <div class="rtrow"><span class="rtlz ${tk.status}">${esc(SLZ[tk.status]||tk.status)}</span>
+           <span class="rtkey">${esc(tk.key)}</span>${tk.major?'<span class="rtmaj">MAJOR</span>':''}</div>
+         <div class="rtsum">${esc(tk.summary)}</div>
+         <div class="rtmeta"><span>Assignee <b>${esc(tk.assignee?tk.assignee.name:'Unassigned')}</b></span>
+           <span>Updated <b>${dstamp(tk.updated)}</b></span></div>`
+      /*SF-STRIP-START*/ + `<a class="rtopen" href="incident-trace.html#${esc(tk.key)}">Open in Incident Trace Portal &rarr;</a>` /*SF-STRIP-END*/
+      + `</div>`
+    : `<div class="rtcard"><div class="rtnone">No linked case &mdash; this indicator is not inside a tracked incident window.`
+      /*SF-STRIP-START*/ + ` <a class="rtopen" href="incident-trace.html">Open the portal &rarr;</a>` /*SF-STRIP-END*/
+      + `</div></div>`;
+  return `<div class="rtrace">
+    <button class="rtoggle" id="rtoggle" aria-expanded="${traceExpanded}" aria-controls="rtbody">
+      <span class="car">&#9654;</span>Incident Trace
+      <span class="rtn">${tk?esc(tk.key):'no linked case'}</span></button>
+    <div class="rtbody${traceExpanded?' open':''}" id="rtbody">${body}</div></div>`;
+}
+function wireTrace(){ const b=document.getElementById('rtoggle'); if(!b)return;
+  b.onclick=()=>{ traceExpanded=!traceExpanded;
+    b.setAttribute('aria-expanded',traceExpanded);
+    document.getElementById('rtbody').classList.toggle('open',traceExpanded); }; }
 document.getElementById('rcaclose').onclick=closeRCA;
 /* one delegated handler for all three tables: focus the node, open the pane, and
    open the incident panel for the exact object · indicator that was clicked */
