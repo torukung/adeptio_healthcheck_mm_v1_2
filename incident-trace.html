@@ -4,7 +4,7 @@
 <meta charset="utf-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1"/>
 <link rel="icon" href="data:,"/>
-<title>Adeptio Incident Trace &middot; Portal — Pay Bill</title>
+<title>ADEPTIO Pulse &mdash; Incident Trace</title>
 <!-- markup + boot only. Tokens come from the dashboard stylesheet; everything
      portal-specific is in assets/portal.css. Plain <link>/<script src> so this
      opens straight off disk (file://). -->
@@ -15,7 +15,12 @@
 <div class="p-shell">
 
   <header class="p-top">
-    <div class="p-word">adeptio<i>.</i></div>
+    <!-- shared ADEPTIO Pulse mark (see .pulsemark in assets/styles.css) -->
+    <svg class="pulsemark" width="26" height="26" viewBox="0 0 28 28" role="img" aria-label="ADEPTIO Pulse">
+      <rect class="pm-badge" x="1" y="1" width="26" height="26" rx="8"/>
+      <path class="pm-trace" d="M4.6 14.5H9.6L11.6 8L14.6 20.6L16.6 14.5H23.4"/>
+    </svg>
+    <div class="p-brand"><span class="p-word">adeptio<i>.</i></span><span class="p-pulse">Pulse</span></div>
     <div class="p-title">INCIDENT TRACE &middot; PORTAL</div>
     <div class="p-proj" id="projchip">INC</div>
     <div class="p-sp"></div>

@@ -4,7 +4,7 @@
 <meta charset="utf-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1"/>
 <link rel="icon" href="data:,"/>
-<title>Adeptio Live Status — Pay Bill · Myanmar Bank</title>
+<title>ADEPTIO Pulse — Flow Inspection : Mobile Payment Module</title>
 <!-- markup + boot only. Styles, data and engine are separate files, all loaded
      with plain <link>/<script src> so this opens straight off disk (file://). -->
 <link rel="stylesheet" href="assets/styles.css"/>
@@ -12,10 +12,16 @@
 <body>
 <div class="app">
   <div class="topbar">
-    <div class="brand"><div class="logo">A</div>
-      <div><div class="t">Live Status — Pay&nbsp;Bill<span class="ver">v1.2.1 · Pay Bill · 7-day</span></div><div class="s">Myanmar commercial-bank template · 7-day mock data</div></div>
+    <div class="brand">
+      <!-- ADEPTIO Pulse mark: rounded-square badge + ECG trace (flat → spike → flat).
+           Chrome only — stroked in the chrome/link accent, never a status colour. -->
+      <svg class="pulsemark" width="28" height="28" viewBox="0 0 28 28" role="img" aria-label="ADEPTIO Pulse">
+        <rect class="pm-badge" x="1" y="1" width="26" height="26" rx="8"/>
+        <path class="pm-trace" d="M4.6 14.5H9.6L11.6 8L14.6 20.6L16.6 14.5H23.4"/>
+      </svg>
+      <div><div class="t"><span class="wm">adeptio<i>.</i></span><span class="pulseword">Pulse</span></div><div class="s">Flow Inspection : Mobile Payment Module</div></div>
     </div>
-    <!--SF-STRIP-START--><a class="navchip main" href="incident-trace.html" title="Open the Incident Trace portal (page 3)">Incident Trace &middot; Portal &rarr;</a><a class="navchip" href="flow-instrumentation.html" title="Open the use-case flow map (page 2)">Use-case &middot; flow map &rarr;</a><!--SF-STRIP-END-->
+    <!--SF-STRIP-START--><a class="navchip main" href="incident-trace.html" title="Open the Incident Trace portal (page 3)">Incident Trace<span class="chiplong"> &middot; Portal</span> &rarr;</a><a class="navchip" href="flow-instrumentation.html" title="Open the use-case flow map (page 2)"><span class="chiplong">Use-case &middot; </span>flow map &rarr;</a><!--SF-STRIP-END-->
     <div class="spacer"></div>
     <div class="summary" id="summary"></div>
     <div class="freshness"><span class="livedot" id="livedot"></span><span id="asof">as of —</span></div>
