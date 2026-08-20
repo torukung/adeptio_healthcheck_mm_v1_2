@@ -1,4 +1,4 @@
-/* Adeptio — Pay Bill flow instrumentation (page 2) · global stylesheet.
+/* ADEPTIO Pulse — Flow Inspection : Mobile Payment Module, instrumentation (page 2) · global stylesheet.
    Extracted verbatim from the page HEAD. The per-section <style> blocks stay
    inline in flow-instrumentation.html: they are component-scoped by design. */
 /* =====================================================================
@@ -80,6 +80,13 @@ h1.page{font-size:25px;font-weight:800;letter-spacing:-.3px;margin:2px 0 0;flex:
   display:flex;align-items:center;gap:14px;flex-wrap:wrap}
 .logo{font-weight:800;letter-spacing:.5px;font-size:18px;color:var(--ink);flex:none}
 .logo .dot{color:var(--coral)}                         /* the coral full-stop */
+/* ADEPTIO Pulse mark — same badge + ECG trace as the dashboard, stroked in this
+   page's chrome/link accent (purple). Chrome only; never a status colour. */
+.pulsemark{flex:0 0 auto;display:block}
+.pulsemark .pm-badge{fill:var(--purple-soft);stroke:var(--purple-line)}
+.pulsemark .pm-trace{fill:none;stroke:var(--purple-ink);stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+.pulseword{font-size:11.5px;font-weight:600;letter-spacing:.15em;text-transform:uppercase;
+  color:var(--slate);white-space:nowrap}
 .logo .x{color:var(--slate2);font-weight:600;margin:0 6px}
 .logo .co{color:var(--navy)}                           /* co-brand name after × */
 .topbar h1{font-size:13.5px;font-weight:600;margin:0;color:var(--slate);flex:1;min-width:0;
