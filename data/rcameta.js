@@ -1,5 +1,5 @@
 /* ============================================================================
- * Adeptio Live Status — Pay Bill · RCA METADATA REGISTRY (incident pop-up)
+ * ADEPTIO Pulse — Flow Inspection : Mobile Payment Module · RCA METADATA REGISTRY (incident pop-up)
  * nodes[<id>]      → editable-default description, customer-facing page + journey
  *                    step, sibling systems to open next, owning team (owners MOCK).
  * indicators["<nodeId>.<objective label>"] → first checks + questions to ask.
