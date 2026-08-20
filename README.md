@@ -1,15 +1,17 @@
-# Pay Bill API Visibility — live dashboard + flow instrumentation
+# ADEPTIO Pulse — Flow Inspection : Mobile Payment Module
 
-> **© Adeptio — public demonstration template.** All data is mock — regenerated in-browser from a fixed seed; every figure is illustrative. Not affiliated with or describing any named institution.
+Live status dashboard + flow instrumentation + incident trace portal.
 
-Three linked pages that make one argument: a Pay Bill journey at a Myanmar
+> **© Adeptio Pulse — public demonstration template.** All data is mock — regenerated in-browser from a fixed seed; every figure is illustrative. Not affiliated with or describing any named institution.
+
+Three linked pages that make one argument: a mobile bill-payment journey at a Myanmar
 commercial bank can be watched end to end, when it breaks the checks themselves
 name the layer and the team, and the case that follows is already on a board.
 
 | | Page | What it is |
 |---|---|---|
 | 1 | [`index.html`](index.html) | **Live status dashboard.** 16 nodes, 17 links, a deterministic 7-day mock week (2016 steps × 5 min) with nine incident windows, three live synthesis tables, and a scrubable timeline. |
-| 2 | [`flow-instrumentation.html`](flow-instrumentation.html) | **The use case, fully instrumented.** Pay Bill top to bottom — the software each step crosses, the hardware it rides, the 52 health checks that watch both, and five fault fingerprints that turn a check pattern into a routed ticket. |
+| 2 | [`flow-instrumentation.html`](flow-instrumentation.html) | **The use case, fully instrumented.** The payment flow top to bottom — the software each step crosses, the hardware it rides, the 52 health checks that watch both, and five fault fingerprints that turn a check pattern into a routed ticket. |
 | 3 | [`incident-trace.html`](incident-trace.html) | **Incident Trace portal.** Where the routed ticket lands: a small board / list / detail ticketing surface over the same nine incident windows — 20 seeded cases, drag-to-transition, comments, linked issues, create. Editable; edits persist to `localStorage` in your browser only. |
 
 Vanilla HTML + CSS + SVG + JS. No framework, no build step, no dependencies, no
@@ -167,7 +169,7 @@ the thresholds already in `manifest.js`.
 The manifest owns everything bank-specific: node ids, display names, coordinates,
 link weights, and the objective definitions (label, unit, baseline, warn/crit
 thresholds, direction, amplitude, noise, incident bindings). The engine owns
-rendering and interaction and knows nothing about Pay Bill. A retarget that
+rendering and interaction and knows nothing about the payment flow. A retarget that
 touches `engine.js` is a retarget that has gone wrong — the divergence will cost
 you at the next upgrade.
 

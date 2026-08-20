@@ -1,5 +1,5 @@
 /* ============================================================================
- * Adeptio Live Status — Pay Bill · DATA MANIFEST
+ * ADEPTIO Pulse — Flow Inspection : Mobile Payment Module · DATA MANIFEST
  * Topology + objective DEFINITIONS only. No time series here: the 7-day series
  * live in data/log_day1.js … log_day7.js and are stitched by assets/engine.js.
  * Loaded as a classic <script src> so the site works from file:// (no fetch).
@@ -126,7 +126,7 @@ const LINKS=[
 ];
 
 /* ---- headline KPI ---- */
-const KPI_DEF=A('','%',99.6,99.0,97.5,'lo',4.8,0.07,{A:4.8,F:6.0,E:1.5,D:1.2,H:1.5},{max:100}); // Pay Bill success % — definition only, series live in data/log_day*.js
+const KPI_DEF=A('','%',99.6,99.0,97.5,'lo',4.8,0.07,{A:4.8,F:6.0,E:1.5,D:1.2,H:1.5},{max:100}); // Payment success % — definition only, series live in data/log_day*.js
 
 /* ---- bottom-table defaults ---- */
 const TABLE_DEFAULTS = { cNode:'pay', cWin:'1h', cSev:'all', aWin:'7d', bWin:'5m' };
