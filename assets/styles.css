@@ -1,4 +1,5 @@
-/* Adeptio Live Status — Pay Bill · stylesheet (extracted verbatim from the single-file build) */
+/* ADEPTIO Pulse — Flow Inspection : Mobile Payment Module · stylesheet
+   (extracted verbatim from the single-file build) */
 :root{
   --ok:#2dd4a7; --warn:#f5a623; --crit:#ff6b5a; --unk:#8b94a3; --maint:#7aa2ff;
   --font:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Inter,Arial,sans-serif;
@@ -11,6 +12,9 @@ html[data-theme="dark"]{
   --node:#1b212b; --nodeStroke:#39424f; --grid:#171c24; --accent:#2dd4a7; --shadow:0 8px 30px rgba(0,0,0,.45);
   --chipink:#2dd4a7; --chipbg:rgba(45,212,167,.10); --chipline:rgba(45,212,167,.42);
   --zebra:rgba(255,255,255,.015);
+  /* house brand coral — the full-stop in the wordmark. CHROME only: deliberately
+     off the --crit hue so a brand mark can never be read as a status mark. */
+  --coral:#dd6b55;
 }
 html[data-theme="light"]{
   --bg:#eef1f5; --bg2:#e7ebf0; --panel:#ffffff; --panel2:#f6f8fa; --glass:rgba(255,255,255,.80);
@@ -18,6 +22,7 @@ html[data-theme="light"]{
   --node:#ffffff; --nodeStroke:#cdd5df; --grid:#e6eaf0; --accent:#0e8a5f; --shadow:0 8px 30px rgba(20,30,50,.12);
   --ok:#0e8a5f; --warn:#b45309; --crit:#ce3b24; --unk:#6b7280; --maint:#3b62c4; --zebra:rgba(20,30,50,.015);
   --chipink:#0a6e4c; --chipbg:rgba(14,138,95,.09); --chipline:rgba(14,138,95,.34);
+  --coral:#c0392b;
 }
 *{box-sizing:border-box}
 html,body{height:100%;margin:0}
@@ -28,10 +33,18 @@ button{font-family:inherit;color:inherit}
 /* top bar */
 .topbar{display:flex;align-items:center;gap:14px;padding:10px 16px;background:var(--glass);backdrop-filter:blur(12px) saturate(140%);border-bottom:1px solid var(--line);z-index:20}
 .brand{display:flex;align-items:center;gap:10px;min-width:0}
-.logo{width:28px;height:28px;border-radius:8px;background:linear-gradient(135deg,#2dd4a7,#12a3a3);color:#04241f;font-weight:800;display:flex;align-items:center;justify-content:center;font-size:15px;flex:0 0 auto}
-.brand .t{font-weight:650;font-size:15px;white-space:nowrap}
+/* ADEPTIO Pulse mark — rounded-square badge carrying an ECG/pulse trace.
+   Chrome, not data: the stroke uses the chrome/link accent token and the badge
+   never changes colour with status. Vector, so it stays crisp at 22–28px. */
+.pulsemark{flex:0 0 auto;display:block}
+.pulsemark .pm-badge{fill:var(--chipbg);stroke:var(--chipline)}
+.pulsemark .pm-trace{fill:none;stroke:var(--chipink);stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+.brand .t{font-weight:650;font-size:15px;white-space:nowrap;display:flex;align-items:baseline;gap:6px}
+/* lowercase wordmark + coral full-stop, then PULSE as a lighter small-caps word */
+.wm{font-weight:800;letter-spacing:-.012em;color:var(--ink)}
+.wm i{font-style:normal;color:var(--coral)}
+.pulseword{font-size:11px;font-weight:600;letter-spacing:.15em;text-transform:uppercase;color:var(--ink2)}
 .brand .s{color:var(--muted);font-size:12px;white-space:nowrap}
-.ver{font-size:10.5px;font-weight:700;color:var(--accent);border:1px solid var(--accent);border-radius:6px;padding:1px 6px;margin-left:6px}
 /* page-2 link chip — sits beside the version chip; tuned for both themes */
 .navchip{display:inline-flex;align-items:center;gap:5px;flex:none;font-size:10.5px;font-weight:700;
   color:var(--chipink);background:var(--chipbg);border:1px solid var(--chipline);border-radius:6px;
@@ -220,6 +233,10 @@ body.rca-open .hint,body.rca-open .legend{left:calc(var(--rcaW) + 14px)}
 /* legend / hint / scenario */
 .legend{position:absolute;left:14px;bottom:14px;display:flex;gap:12px;align-items:center;background:var(--glass);backdrop-filter:blur(12px);border:1px solid var(--line);border-radius:11px;padding:8px 12px;font-size:11.5px;color:var(--ink2);z-index:15;flex-wrap:wrap;max-width:min(560px,68vw)}
 .legend .li{display:flex;align-items:center;gap:6px}.legend .sw{width:11px;height:11px;border-radius:3px}.legend .sep{width:1px;height:14px;background:var(--line)}
+/* build + provenance remarks, shifted out of the top bar — always its own last
+   row inside the legend card, muted so it never competes with the status keys. */
+.legend .lgfoot{flex:0 0 100%;margin-top:1px;padding-top:6px;border-top:1px solid var(--line);
+  color:var(--muted);font-size:10.5px;letter-spacing:.01em;white-space:normal}
 .hint{position:absolute;left:14px;top:14px;background:var(--glass);backdrop-filter:blur(12px);border:1px solid var(--line);border-radius:11px;padding:9px 13px;font-size:12px;color:var(--ink2);z-index:15;max-width:320px;box-shadow:var(--shadow)}
 .hint b{color:var(--ink)}.hint .x{float:right;cursor:pointer;color:var(--muted);margin-left:10px}
 .scenario{position:absolute;top:14px;right:calc(var(--dockW) + 14px);background:var(--glass);backdrop-filter:blur(12px);border:1px solid var(--line);border-left:3px solid var(--warn);border-radius:11px;padding:9px 13px;font-size:12px;color:var(--ink2);z-index:14;max-width:320px;transition:right .28s;box-shadow:var(--shadow)}
@@ -293,6 +310,22 @@ table.dt tbody tr.flash{animation:flash 1.4s ease-out}
 /* Narrow desktops (kept last so it wins on source order): the top bar had ~2px of slack before the page-2 chip was
    added, so shed the most redundant items first. The version chip repeats the
    brand subtitle, and freshness repeats the timeline clock. */
-@media(max-width:1400px){ .ver{display:none} }
-@media(max-width:1300px){ .freshness{display:none} .brand .s{display:none} }
+/* The top bar is a grid item, so its default min-width:auto let its min-content
+   push .app wider than the viewport (the bar measured 1482px inside a 1366px
+   window before this). min-width:0 lets it shrink and the flex children absorb
+   it instead. */
+.topbar{min-width:0;overflow:hidden}
+/* The version/template chip moved to the legend card. Spending the space it
+   freed on a tighter rhythm below 1440 keeps the flow-name subtitle legible all
+   the way down to 1280, where the old build had already dropped its subtitle. */
+@media(max-width:1440px){ .topbar{gap:10px;padding-left:12px;padding-right:12px} .search{min-width:150px}
+  .summary{gap:6px} .scount{padding:5px 9px} }
+/* the "as of" clock is the first thing to go — the timeline restates it, and
+   dropping it is what buys the flow name its full width at 1366. */
+@media(max-width:1400px){ .freshness{display:none} }
+/* below 1300 the nav chips shed their qualifier words rather than the flow name */
+@media(max-width:1300px){ .topbar{gap:8px} .search{min-width:140px} .chiplong{display:none} }
+@media(max-width:1180px){ .brand .s{display:none} }
 .brand{overflow:hidden}   /* guard: clip the brand rather than paint over the chip */
+.brand>div{min-width:0}
+.brand .s{overflow:hidden;text-overflow:ellipsis}

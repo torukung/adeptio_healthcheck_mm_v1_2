@@ -35,8 +35,13 @@ body{overflow:auto;background:var(--bg)}
 .p-top{display:flex;align-items:center;gap:14px;padding:10px 18px;background:var(--glass);
   backdrop-filter:blur(12px) saturate(140%);border-bottom:1px solid var(--line);
   position:sticky;top:0;z-index:40;flex-wrap:wrap}
+/* ADEPTIO Pulse brand block — badge + wordmark, shared mark with the dashboard */
+.p-brand{display:flex;align-items:baseline;gap:7px;min-width:0}
+.p-top .pulsemark{align-self:center}
 .p-word{font-size:19px;font-weight:800;letter-spacing:-.01em;color:var(--ink);white-space:nowrap}
-.p-word i{font-style:normal;color:var(--crit)}
+.p-word i{font-style:normal;color:var(--coral)}
+.p-pulse{font-size:12px;font-weight:600;letter-spacing:.15em;text-transform:uppercase;
+  color:var(--ink2);white-space:nowrap}
 .p-title{font-size:10.5px;letter-spacing:.16em;font-weight:750;color:var(--muted);white-space:nowrap}
 .p-proj{font-family:var(--mono);font-size:10.5px;font-weight:700;color:var(--chipink);
   background:var(--chipbg);border:1px solid var(--chipline);border-radius:6px;padding:3px 8px}
