@@ -1,5 +1,5 @@
 /* ============================================================================
- * Adeptio Live Status — Pay Bill · ENGINE
+ * ADEPTIO Pulse — Flow Inspection : Mobile Payment Module · ENGINE
  * Rendering / interaction / tables / timeline. Identical to the single-file
  * build except for ONE thing: series are not generated at boot — they are read
  * from window.ADEPTIO_LOGS (data/log_day1.js … log_day7.js) and stitched into
@@ -164,7 +164,7 @@ function paintSummary(){ const t=cur; let ok=0,w=0,c=0; NODES.forEach(n=>{ const
   for(const k in INC){ const w=INC[k], open_ = w.length===2 ? t>=w[0] : (t>=w[0]&&t<=w[2]); if(!open_) continue;
     const sc=sevAt(k,t)*(INCMETA[k][1]==='crit'?2:1); if(sc>=best){ best=sc; active=k; } }
   // strongest currently-open incident wins the banner headline
-  sc.innerHTML=`<b>Mock scenario week</b> · 7-day replay${DATA_TAG}<br><span style="color:${statusColor(ks)}">●</span> Pay Bill success <b>${kpi.toFixed(1)}%</b> · `+
+  sc.innerHTML=`<b>Mock scenario week</b> · 7-day replay${DATA_TAG}<br><span style="color:${statusColor(ks)}">●</span> Payment success <b>${kpi.toFixed(1)}%</b> · `+
     `<span style="color:${statusColor(c>0?'crit':w>0?'warn':'ok')}">${c} crit / ${w} deg</span>`+
     (active?` · <b style="color:${statusColor(INCMETA[active][1])}">${INCMETA[active][0]}</b>`:` · <b style="color:var(--ok)">nominal</b>`)+
     `<br><span style="color:var(--muted);font-size:11px">Success = attempt → debit posted → biller credit confirmed in SLA — business + technical declines both count. Read beside volume: ~7.8k attempts/hr daytime (mock).</span>`+
@@ -569,7 +569,10 @@ function drawBands(){ const bands=document.getElementById('bands'); bands.innerH
 /* legend / theme / misc */
 function buildLegend(){ const L=document.getElementById('legend'); const items=[['ok','OK'],['warn','Degraded'],['crit','Critical'],['unk','No data']];
   let h='<div class="li" style="font-weight:650;color:var(--ink)">Status</div>'; items.forEach(([k,l])=>h+=`<div class="li"><span class="sw" style="background:${statusColor(k)}"></span>${l}</div>`);
-  h+='<div class="sep"></div><div class="li">◑ ring = per-objective</div><div class="li">— link = worst-of-path</div><div class="li">● note</div><div class="li">★ pinned</div>'; L.innerHTML=h; }
+  h+='<div class="sep"></div><div class="li">◑ ring = per-objective</div><div class="li">— link = worst-of-path</div><div class="li">● note</div><div class="li">★ pinned</div>';
+  // build + provenance remarks — moved here out of the top bar (v1.2.1 chrome pass)
+  h+='<div class="li lgfoot">v1.2.1 · Myanmar commercial-bank template · 7-day mock data</div>';
+  L.innerHTML=h; }
 document.getElementById('theme').onclick=()=>{ const c=document.documentElement.getAttribute('data-theme'),nx=c==='dark'?'light':'dark'; document.documentElement.setAttribute('data-theme',nx);
   document.getElementById('themeicon').innerHTML=nx==='dark'?'<path d="M21 12.8A9 9 0 1111.2 3 7 7 0 0021 12.8z"/>':'<circle cx="12" cy="12" r="4.5"/><path d="M12 2v2M12 20v2M4 12H2M22 12h-2M5 5l1.5 1.5M17.5 17.5L19 19M19 5l-1.5 1.5M6.5 17.5L5 19"/>';
   buildLegend(); drawBands(); paint(); };
