@@ -4,16 +4,24 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <link rel="icon" href="data:,"/>
-<title>Adeptio — Pay Bill, Fully Instrumented · Flow × Software × Hardware × Health Checks</title>
+<title>ADEPTIO Pulse — Flow Inspection : Mobile Payment Module · Instrumentation Ledger</title>
 <link rel="stylesheet" href="assets/flow.css"/>
 </head>
 <body>
 
 <header>
   <div class="pagewrap" style="display:flex;align-items:center;justify-content:space-between;gap:16px;padding-top:20px;padding-bottom:6px;flex-wrap:wrap">
-    <div style="display:flex;align-items:baseline;gap:14px">
-      <div style="font-size:23px;font-weight:800;color:var(--ink)">adeptio<span style="color:var(--coral)">.</span></div>
-      <div style="font-size:11px;letter-spacing:.16em;font-weight:700;color:var(--slate)">API VISIBILITY · USE-CASE INSTRUMENTATION</div>
+    <div style="display:flex;align-items:center;gap:12px">
+      <!-- shared ADEPTIO Pulse mark (see .pulsemark in assets/flow.css) -->
+      <svg class="pulsemark" width="28" height="28" viewBox="0 0 28 28" role="img" aria-label="ADEPTIO Pulse">
+        <rect class="pm-badge" x="1" y="1" width="26" height="26" rx="8"/>
+        <path class="pm-trace" d="M4.6 14.5H9.6L11.6 8L14.6 20.6L16.6 14.5H23.4"/>
+      </svg>
+      <div style="display:flex;align-items:baseline;gap:8px;flex-wrap:wrap">
+        <div style="font-size:23px;font-weight:800;color:var(--ink)">adeptio<span style="color:var(--coral)">.</span></div>
+        <span class="pulseword">Pulse</span>
+        <div style="font-size:11px;letter-spacing:.16em;font-weight:700;color:var(--slate);margin-left:6px">FLOW INSPECTION : MOBILE PAYMENT MODULE</div>
+      </div>
     </div>
     <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center">
       <a href="index.html" style="font-size:11.5px;font-weight:650;color:var(--purple-ink);background:var(--purple-soft);border:1px solid var(--purple-line);border-radius:999px;padding:6px 13px;text-decoration:none">&larr; Live dashboard</a>
@@ -26,8 +34,8 @@
 
 <div class="pagewrap">
   <section class="hero">
-    <div class="kicker" style="color:var(--purple-ink);font-size:11px;font-weight:750;letter-spacing:.16em">ONE FOCUSED USE-CASE · PAY BILL · TOP TO BOTTOM</div>
-    <h1>Pay Bill, fully instrumented — one flow, both stacks, every check</h1>
+    <div class="kicker" style="color:var(--purple-ink);font-size:11px;font-weight:750;letter-spacing:.16em">ONE FOCUSED USE-CASE · MOBILE PAYMENT MODULE · TOP TO BOTTOM</div>
+    <h1>Flow Inspection : Mobile Payment Module — one flow, both stacks, every check</h1>
     <p class="stand">Ma Thida's 45,000 MMK electricity bill again — this time as an engineering ledger. The flow runs <strong>top to bottom exactly as it executes</strong>, and three columns run beside it: the <strong>software</strong> each step crosses, the <strong>hardware</strong> it rides, and the <strong>health checks</strong> — availability and quality — that watch both. Then: what normal looks like, how fingerprints name a root cause, and the twelve platform functions that let our system do all of it alone.</p>
     <div class="objrow">
       <span class="obj">Objective 1 — full-flow health check, software and hardware</span>
@@ -44,7 +52,7 @@
 </div>
 
 <nav class="chapnav"><div class="in">
-  <span class="brandmini">adeptio<span class="dot">.</span></span>
+  <span class="brandmini">adeptio<span class="dot">.</span></span><span class="pulseword" style="margin-right:10px">Pulse</span>
   <a href="#ch1">01 · Instrumented flow</a>
   <a href="#ch2">02 · What normal looks like</a>
   <a href="#ch3">03 · Root cause</a>
@@ -173,7 +181,7 @@
 </style>
 <p class="c1-k">SECTION 01 &middot; THE INSTRUMENTED FLOW</p>
 <h2>Fourteen steps, three columns, every check</h2>
-<p class="c1-stand">The Pay Bill flow top-to-bottom, exactly as it runs &mdash; and beside every step, the software it crosses, the hardware it rides, and the checks that watch both. <strong>Every check is read-only; none sits in the payment path.</strong></p>
+<p class="c1-stand">The Mobile Payment Module flow top-to-bottom, exactly as it runs &mdash; and beside every step, the software it crosses, the hardware it rides, and the checks that watch both. <strong>Every check is read-only; none sits in the payment path.</strong></p>
 <div class="legend"><span class="li"><span class="tagchip tag-av">AV</span> availability &mdash; is it up</span><span class="li"><span class="tagchip tag-ql">QL</span> quality &mdash; is it good</span><span class="li"><span class="tagchip tag-l3">L3</span> business-logic assertion &mdash; did the money move correctly</span><span class="li"><span class="c1-lg"></span> flow, step to step</span><span class="li"><span class="c1-lg c1-dsh"></span> dashed = next-day (T+1), not inferred</span><span class="li"><span class="c1-lgv">&#9662;</span> order of execution &middot; cadence = probe interval</span><span class="li"><span class="flag-ill">ILLUSTRATIVE</span> cadences and thresholds are calibration seeds</span></div>
 <div class="c1-ledger">
 <div class="c1-hdr"><div class="c1-h">The flow <i>top &rarr; bottom</i></div><div class="c1-h">Software <i>front-end &rarr; back-end</i></div><div class="c1-h">Hardware <i>front-end &rarr; back-end</i></div><div class="c1-h">Health checks <i>availability + quality</i></div></div>
@@ -987,8 +995,8 @@
     <p style="font-size:14px;color:var(--slate);max-width:800px;line-height:1.62">All thresholds and clock figures are <strong style="color:var(--ink)">illustrative seeds</strong> — the first two observation weeks calibrate them per bank. Vendor-specific identifiers (SNMP OIDs beyond the verified set, storage and appliance MIBs, rate-limit headers) are confirmed per device in discovery. Swap <strong style="color:var(--ink)">{BANK}</strong>, confirm the biller list and carrier set, and agree the seeded test account and test MSISDN. Regulatory context lives in the companion E2E Visibility Map.</p>
     <div class="guarline"><strong>The standing commitment:</strong> every check on this page is read-only — probes from outside, log and receipt reads, canary queries on read replicas, file checks. No agents in the payment path, nothing writes back, and if you turn Adeptio off, nothing in production changes. We detect, trace, score and ticket; your team owns the fix.</div>
     <div class="pagefoot">
-      <div><span class="fbrand">adeptio<span class="dot">.</span></span> &nbsp;·&nbsp; Demonstration template · mock data · all figures illustrative</div>
-      <div>Pay Bill instrumentation ledger · Generic Myanmar-bank edition · All figures illustrative · August 2026</div>
+      <div><span class="fbrand">adeptio<span class="dot">.</span></span> <span class="pulseword">Pulse</span> &nbsp;·&nbsp; Demonstration template · mock data · all figures illustrative</div>
+      <div>Flow Inspection : Mobile Payment Module — instrumentation ledger · Generic Myanmar-bank edition · All figures illustrative · August 2026</div>
     </div>
   </section>
 
