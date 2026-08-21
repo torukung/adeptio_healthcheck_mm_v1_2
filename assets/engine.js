@@ -159,16 +159,21 @@ function paintSummary(){ const t=cur; let ok=0,w=0,c=0; NODES.forEach(n=>{ const
   const S=document.getElementById('summary'); S.innerHTML='';
   [['ok',ok,'OK'],['warn',w,'Degraded'],['crit',c,'Critical']].forEach(([k,v,l])=>{ const d=document.createElement('div'); d.className='scount';
     d.innerHTML=`<span class="dot" style="background:${statusColor(k)}"></span><b>${v}</b> <span class="lbl" style="color:var(--muted)">${l}</span>`; S.appendChild(d); });
-  const kpi=KPI.vals[t],ks=KPI.stat[t]; const sc=document.getElementById('scenario');
+  const kpi=KPI.vals[t],ks=KPI.stat[t]; const sc=document.getElementById('scbody');
   let active='',best=0;
   for(const k in INC){ const w=INC[k], open_ = w.length===2 ? t>=w[0] : (t>=w[0]&&t<=w[2]); if(!open_) continue;
     const sc=sevAt(k,t)*(INCMETA[k][1]==='crit'?2:1); if(sc>=best){ best=sc; active=k; } }
+  // the minimised chip keeps reporting the strongest open window through its dot
+  const chip=document.getElementById('scchip'),dot=document.getElementById('scchipdot');
+  if(dot){ dot.style.background=statusColor(active?INCMETA[active][1]:'ok');
+    chip.title='Scenario · '+(active?INCMETA[active][0]:'nominal')+' — click to expand'; }
   // strongest currently-open incident wins the banner headline
   sc.innerHTML=`<b>Mock scenario week</b> · 7-day replay${DATA_TAG}<br><span style="color:${statusColor(ks)}">●</span> Payment success <b>${kpi.toFixed(1)}%</b> · `+
     `<span style="color:${statusColor(c>0?'crit':w>0?'warn':'ok')}">${c} crit / ${w} deg</span>`+
     (active?` · <b style="color:${statusColor(INCMETA[active][1])}">${INCMETA[active][0]}</b>`:` · <b style="color:var(--ok)">nominal</b>`)+
     `<br><span style="color:var(--muted);font-size:11px">Success = attempt → debit posted → biller credit confirmed in SLA — business + technical declines both count. Read beside volume: ~7.8k attempts/hr daytime (mock).</span>`+
     `<br><span style="color:var(--muted);font-size:11px">7-day replay · D1 OTP dip · D2 silent false-declines (replica lag) · D3 one carrier, two symptoms · D4–5 storage creep → D5 19:00 CORE OUTAGE, full path red · D6 LB pool loss + EOD overrun · D7 aggregator brownout + deploy regression.</span>`;
+  scheduleScFit();   // the copy above changes height at incident boundaries
 }
 function updateClock(){ document.getElementById('tlcur').textContent=dstamp(cur)+(cur===N-1?' · live':'');
   document.getElementById('tlstart').textContent=dstamp(0); document.getElementById('tlend').textContent=dstamp(N-1);
@@ -375,10 +380,13 @@ function renderTables(){ if(document.getElementById('bottom').classList.contains
  * window of the table the row was clicked in, so they agree with the row.      */
 const rcaPanel=document.getElementById('rcapanel'), rcaBody=document.getElementById('rcabody');
 let rcaOpen=null;
-function closeRCA(){ rcaOpen=null; rcaPanel.classList.remove('open'); rcaPanel.setAttribute('aria-hidden','true'); document.body.classList.remove('rca-open'); }
+function closeRCA(){ rcaOpen=null; rcaPanel.classList.remove('open'); rcaPanel.setAttribute('aria-hidden','true'); document.body.classList.remove('rca-open'); scTuckSet(false); scReflow(); }
+/* the whole left stack slides when the RCA panel opens/closes, so the scenario
+   card lands over different nodes — refit once now and once the slide has ended */
+function scReflow(){ scheduleScFit(); setTimeout(scheduleScFit,330); }
 function openRCA(nid,label,W){ const n=byId(nid); if(!n)return; const o=n.objs.find(x=>x.label===label); if(!o)return;
   rcaOpen={nid,label,W:W||WSTEPS[A_DEFAULT_WIN]};
-  rcaPanel.classList.add('open'); rcaPanel.setAttribute('aria-hidden','false'); document.body.classList.add('rca-open'); renderRCA(); }
+  rcaPanel.classList.add('open'); rcaPanel.setAttribute('aria-hidden','false'); document.body.classList.add('rca-open'); renderRCA(); scTuckSet(true); scReflow(); }
 function rcaSec(num,title,inner){ return `<section class="rsec"><h4><span class="rn">${num}</span>${title}</h4>${inner}</section>`; }
 function rcaList(items,cls){ return items&&items.length?`<ul class="rlist ${cls||''}">${items.map(x=>`<li>${esc(x)}</li>`).join('')}</ul>`:'<div class="rnone">—</div>'; }
 function renderRCA(){ if(!rcaOpen)return;
@@ -490,7 +498,26 @@ function applyView(){ vp.setAttribute('transform',`translate(${view.x},${view.y}
 function dockW(){ return dock.classList.contains('open')?parseInt(getComputedStyle(document.documentElement).getPropertyValue('--dockW')):0; }
 function fit(){ const pad=90; let minx=1e9,miny=1e9,maxx=-1e9,maxy=-1e9; NODES.forEach(n=>{ minx=Math.min(minx,n.x);miny=Math.min(miny,n.y);maxx=Math.max(maxx,n.x);maxy=Math.max(maxy,n.y); });
   const w=stage.clientWidth-dockW(),h=stage.clientHeight,bw=maxx-minx+pad*2,bh=maxy-miny+pad*2; const k=clamp(Math.min(w/bw,h/bh),0.4,1.6);
-  view.k=k; view.x=(w-(minx+maxx)*k)/2; view.y=(h-(miny+maxy)*k)/2; applyView(); }
+  view.k=k; view.x=(w-(minx+maxx)*k)/2; view.y=(h-(miny+maxy)*k)/2; applyView(); balance(); scheduleScFit(); }
+/* fit() centres the node CENTRES, but a rendered node hangs well below its centre
+   (disc + three label lines), so the map sat top-heavy — ~54px of dead canvas
+   above and ~16px below at 1600×900. balance() re-centres on the true rendered
+   extent: same scale, pure nudge, and it is what opens the bottom-left pocket the
+   scenario card now occupies. The nudge only ever moves the map UP, and is
+   clamped so nodes sharing the hint card's column can never ride into it. */
+function balance(){
+  const st=stage.getBoundingClientRect(), gs=[];
+  gNodes.querySelectorAll('.node').forEach(g=>{ const b=g.getBoundingClientRect();
+    gs.push({x1:b.left-st.left,x2:b.right-st.left,y1:b.top-st.top,y2:b.bottom-st.top}); });
+  if(!gs.length)return;
+  const top=Math.min(...gs.map(g=>g.y1)), bot=st.height-Math.max(...gs.map(g=>g.y2));
+  let dy=(top-bot)/2; if(dy<=1)return;
+  const hb=hintBox();   // 8px of margin, so a node column that merely abuts the
+                        // hint is still treated as sharing its lane
+  if(hb) gs.forEach(g=>{ if(g.x2>hb.x1-8&&g.x1<hb.x2+8) dy=Math.min(dy,g.y1-(hb.y2+6)); });
+  dy=Math.min(dy,top-10);
+  if(dy>1){ view.y-=dy; applyView(); }
+}
 canvas.addEventListener('wheel',e=>{ e.preventDefault(); const r=canvas.getBoundingClientRect(),mx=e.clientX-r.left,my=e.clientY-r.top,f=e.deltaY<0?1.12:1/1.12,nk=clamp(view.k*f,0.3,4);
   view.x=mx-(mx-view.x)*(nk/view.k); view.y=my-(my-view.y)*(nk/view.k); view.k=nk; applyView(); },{passive:false});
 document.getElementById('zoomin').onclick=()=>zoomBtn(1.2); document.getElementById('zoomout').onclick=()=>zoomBtn(1/1.2);
@@ -512,6 +539,74 @@ const dockresizer=document.getElementById('dockresizer'); let dres=null;
 dockresizer.addEventListener('mousedown',e=>{ dres={sx:e.clientX,ow:parseInt(getComputedStyle(document.documentElement).getPropertyValue('--dockW'))}; e.preventDefault(); document.body.style.cursor='col-resize'; });
 window.addEventListener('mousemove',e=>{ if(!dres)return; const nw=clamp(dres.ow-(e.clientX-dres.sx),300,Math.min(720,window.innerWidth-120)); document.documentElement.style.setProperty('--dockW',nw+'px'); });
 window.addEventListener('mouseup',()=>{ if(dres){ dres=null; document.body.style.cursor=''; refreshPanes(); } });
+
+/* ===================== SCENARIO CARD (bottom-left stack) =====================
+ * The card lives above the status legend and grows upward from it. Three things
+ * are handled here and nowhere else:
+ *   · fitScenario()  — caps .sc-body's height to the free pocket between the
+ *     legend and whatever is above the card (the hint card's reserved band, or a
+ *     node label), so the card scrolls internally rather than ever overlapping.
+ *   · drag to resize — right edge = width (260…520), top-right corner = both.
+ *   · minimise       — collapses to the scenario glyph chip in the same anchor.
+ * Width / height / collapsed state are session-scoped (in memory); Reset clears
+ * all three back to the responsive default, expanded.
+ */
+const scEl=document.getElementById('scenario'), scBody=document.getElementById('scbody'),
+      scChip=document.getElementById('scchip');
+const SC_MINW=260, SC_MAXW=520;
+let scW=null, scH=null, scMin=false, scRaf=0;
+
+/* The hint card is dismissible, and a display:none element has no geometry — so
+   its box is cached while it is still on screen and the reserve is kept either
+   way. Dismissing the hint therefore never shifts the map or resizes the card. */
+let HINTB=null;
+function hintBox(){ const e=document.getElementById('hint');
+  if(e&&getComputedStyle(e).display!=='none'){ const st=stage.getBoundingClientRect(),b=e.getBoundingClientRect();
+    HINTB={x1:b.left-st.left,x2:b.right-st.left,y2:b.bottom-st.top}; }
+  return HINTB; }
+
+function scheduleScFit(){ if(scRaf)return; scRaf=requestAnimationFrame(()=>{ scRaf=0; fitScenario(); }); }
+function fitScenario(){
+  if(!scEl||scMin||scEl.hidden||getComputedStyle(scEl).display==='none')return;
+  const st=stage.getBoundingClientRect(), lg=document.getElementById('legend').getBoundingClientRect();
+  scBody.style.maxHeight='';                                   // measure natural first
+  const chrome=scEl.getBoundingClientRect().height-scBody.getBoundingClientRect().height;
+  const nat=scBody.scrollHeight;
+  const card=scEl.getBoundingClientRect(), cx1=card.left-st.left, cx2=card.right-st.left;
+  const hb=hintBox();
+  let ceil=(hb&&hb.x2>cx1&&hb.x1<cx2)?hb.y2+8:10;              // floor of whatever is above
+  gNodes.querySelectorAll('.node').forEach(g=>{ const b=g.getBoundingClientRect();
+    if(b.right-st.left>cx1 && b.left-st.left<cx2) ceil=Math.max(ceil,(b.bottom-st.top)+6); });
+  const avail=Math.max(44,(lg.top-st.top)-8-ceil-chrome);
+  scBody.style.maxHeight=Math.min(scH||nat, nat, avail)+'px';
+}
+function scSetMin(v){ scMin=v; scEl.hidden=v; scChip.hidden=!v;
+  scChip.setAttribute('aria-expanded',v?'false':'true'); if(!v)scheduleScFit(); }
+/* The RCA panel slides the whole left stack 394px into the map, where a 440px
+   card would occlude far more of the graph than the legend alone ever did. So the
+   card tucks itself into the chip for the duration — and only for the duration:
+   a tuck is remembered separately from a deliberate minimise, so whatever state
+   the reader chose is what comes back when the panel closes. */
+let scTuck=false;
+function scUserMin(v){ scTuck=false; scSetMin(v); }
+function scTuckSet(v){ if(v){ if(!scMin){ scTuck=true; scSetMin(true); } }
+  else if(scTuck){ scTuck=false; scSetMin(false); } }
+document.getElementById('scmin').onclick=()=>scUserMin(true);
+scChip.onclick=()=>scUserMin(false);
+
+let sres=null;
+function scStartRes(e,mode){ sres={mode,sx:e.clientX,sy:e.clientY,
+    ow:scEl.getBoundingClientRect().width, oh:scBody.getBoundingClientRect().height};
+  e.preventDefault(); e.stopPropagation(); document.body.style.cursor=mode==='c'?'nesw-resize':'col-resize'; }
+document.getElementById('scrz').addEventListener('mousedown',e=>scStartRes(e,'w'));
+document.getElementById('scrzc').addEventListener('mousedown',e=>scStartRes(e,'c'));
+window.addEventListener('mousemove',e=>{ if(!sres)return;
+  scW=Math.round(clamp(sres.ow+(e.clientX-sres.sx),SC_MINW,SC_MAXW));
+  scEl.style.width=scW+'px';
+  if(sres.mode==='c') scH=Math.max(44,Math.round(sres.oh-(e.clientY-sres.sy)));  // drag up = taller
+  fitScenario(); });
+window.addEventListener('mouseup',()=>{ if(sres){ sres=null; document.body.style.cursor=''; } });
+window.addEventListener('resize',scheduleScFit);
 
 /* bottom panel resize + close + table width dividers */
 const bottom=document.getElementById('bottom'),bhandle=document.getElementById('bhandle'); let bres=null;
@@ -591,6 +686,8 @@ function resetAll(){ stop();
   document.getElementById('tblA').style.width='34%'; document.getElementById('tblA').style.flex=''; document.getElementById('tblB').style.width='34%'; document.getElementById('tblB').style.flex='';
   // move the clock BEFORE re-opening the tables, so they never render a stale window
   cur=0; toggleTables(true); si=0; document.getElementById('speed').textContent='1×';
+  // scenario card back to its responsive default size, expanded (F4 chrome pass)
+  scW=null; scH=null; scTuck=false; scEl.style.width=''; scSetMin(false);
   document.getElementById('hint').style.display=''; paintLinksOnly(); paint(); fit();
 }
 document.getElementById('resetbtn').onclick=resetAll;
