@@ -227,11 +227,16 @@ svg.canvas.panning{cursor:grabbing}
 .rtopen:hover{text-decoration:underline}
 .rtnone{font-size:11.5px;color:var(--muted);line-height:1.5}
 /* keep the stage furniture clear of the panel while it is open */
-.hint,.legend{transition:left .28s}
-body.rca-open .hint,body.rca-open .legend{left:calc(var(--rcaW) + 14px)}
+.hint,.leftstack{transition:left .28s}
+body.rca-open .hint,body.rca-open .leftstack{left:calc(var(--rcaW) + 14px)}
 
 /* legend / hint / scenario */
-.legend{position:absolute;left:14px;bottom:14px;display:flex;gap:12px;align-items:center;background:var(--glass);backdrop-filter:blur(12px);border:1px solid var(--line);border-radius:11px;padding:8px 12px;font-size:11.5px;color:var(--ink2);z-index:15;flex-wrap:wrap;max-width:min(560px,68vw)}
+/* BOTTOM-LEFT STACK: scenario card above the status legend, one anchor for both.
+   Bottom-anchored, so the card grows UPWARD and the legend never moves. The
+   wrapper itself is click-through; only the cards take pointer events. */
+.leftstack{position:absolute;left:14px;bottom:14px;z-index:15;display:flex;flex-direction:column;align-items:flex-start;gap:8px;pointer-events:none;max-width:calc(100% - 28px)}
+.leftstack>*{pointer-events:auto}
+.legend{display:flex;gap:12px;align-items:center;background:var(--glass);backdrop-filter:blur(12px);border:1px solid var(--line);border-radius:11px;padding:8px 12px;font-size:11.5px;color:var(--ink2);flex-wrap:wrap;max-width:min(560px,68vw)}
 .legend .li{display:flex;align-items:center;gap:6px}.legend .sw{width:11px;height:11px;border-radius:3px}.legend .sep{width:1px;height:14px;background:var(--line)}
 /* build + provenance remarks, shifted out of the top bar — always its own last
    row inside the legend card, muted so it never competes with the status keys. */
@@ -239,8 +244,35 @@ body.rca-open .hint,body.rca-open .legend{left:calc(var(--rcaW) + 14px)}
   color:var(--muted);font-size:10.5px;letter-spacing:.01em;white-space:normal}
 .hint{position:absolute;left:14px;top:14px;background:var(--glass);backdrop-filter:blur(12px);border:1px solid var(--line);border-radius:11px;padding:9px 13px;font-size:12px;color:var(--ink2);z-index:15;max-width:320px;box-shadow:var(--shadow)}
 .hint b{color:var(--ink)}.hint .x{float:right;cursor:pointer;color:var(--muted);margin-left:10px}
-.scenario{position:absolute;top:14px;right:calc(var(--dockW) + 14px);background:var(--glass);backdrop-filter:blur(12px);border:1px solid var(--line);border-left:3px solid var(--warn);border-radius:11px;padding:9px 13px;font-size:12px;color:var(--ink2);z-index:14;max-width:320px;transition:right .28s;box-shadow:var(--shadow)}
-.scenario.wide{right:14px}.scenario b{color:var(--ink)}
+/* SCENARIO CARD — resizable frame. Width is a session-scoped custom property
+   (--scW, 260…520 by drag); height is governed by .sc-body's max-height, which
+   the engine sets to the free pocket above the legend, so the card scrolls
+   internally instead of ever riding over the hint card or a node label. */
+.scenario{position:relative;width:min(var(--scW,440px),33vw,calc(100vw - 28px));background:var(--glass);backdrop-filter:blur(12px);border:1px solid var(--line);border-left:3px solid var(--warn);border-radius:11px;padding:9px 13px;font-size:12px;color:var(--ink2);box-shadow:var(--shadow)}
+.scenario b{color:var(--ink)}
+.sc-body{overflow:auto;overscroll-behavior:contain;padding-right:18px}
+.sc-body::-webkit-scrollbar{width:7px}
+.sc-body::-webkit-scrollbar-thumb{background:var(--line);border-radius:4px}
+.sc-min{position:absolute;top:5px;right:6px;z-index:2;width:19px;height:19px;padding:0;display:flex;align-items:center;justify-content:center;font-size:16px;line-height:1;border:1px solid transparent;background:transparent;color:var(--muted);border-radius:5px;cursor:pointer}
+.sc-min:hover{color:var(--ink);border-color:var(--line);background:var(--panel)}
+.sc-min:focus-visible{outline:2px solid var(--chipink);outline-offset:1px}
+/* drag affordances: right edge = width, top-right corner = width + height */
+.sc-rz{position:absolute;top:10px;bottom:10px;right:-4px;width:8px;cursor:col-resize}
+.sc-rz::after{content:"";position:absolute;top:50%;left:2.5px;transform:translateY(-50%);width:3px;height:24px;border-radius:3px;background:var(--line)}
+.sc-rzc{position:absolute;top:-4px;right:-4px;width:16px;height:16px;cursor:nesw-resize}
+.sc-rzc::after{content:"";position:absolute;top:5px;right:5px;width:7px;height:7px;border-top:2px solid var(--line);border-right:2px solid var(--line);border-radius:0 3px 0 0}
+/* grips rest as quietly as the dock's and the table handle's, but come forward on
+   card hover so the frame reads as adjustable before you go looking for the edge */
+.scenario:hover .sc-rz::after{background:var(--ink2)}
+.scenario:hover .sc-rzc::after{border-color:var(--ink2)}
+.sc-rz:hover::after{background:var(--accent)}
+.sc-rzc:hover::after{border-color:var(--accent)}
+/* MINIMISED FORM — chrome-accent glyph chip; the dot alone carries status colour */
+.scchip{display:inline-flex;align-items:center;gap:7px;cursor:pointer;font-size:11.5px;font-weight:650;color:var(--chipink);background:var(--chipbg);backdrop-filter:blur(12px);border:1px solid var(--chipline);border-radius:10px;padding:6px 10px 6px 8px;box-shadow:var(--shadow)}
+.scchip[hidden]{display:none}
+.scchip:hover{border-color:var(--chipink)}
+.scchip:focus-visible{outline:2px solid var(--chipink);outline-offset:2px}
+.scchip .sev{width:8px;height:8px;border-radius:50%;background:var(--ok);flex:0 0 auto;margin-left:1px}
 
 /* bottom live tables */
 .bottom{position:relative;min-width:0;height:var(--bh);background:var(--glass);backdrop-filter:blur(12px);border-top:1px solid var(--line);display:flex;flex-direction:column;z-index:18}
@@ -305,8 +337,8 @@ table.dt tbody tr.flash{animation:flash 1.4s ease-out}
 .tl-right{display:flex;gap:6px;align-items:center;flex:0 0 auto}
 .speed{border:1px solid var(--line);background:var(--panel);color:var(--ink2);border-radius:9px;padding:7px 10px;cursor:pointer;font-size:12px;min-width:44px}.speed:hover{border-color:var(--accent)}
 .ghost{position:absolute;bottom:30px;transform:translateX(-50%);background:var(--panel);border:1px solid var(--line);border-radius:7px;padding:3px 7px;font-size:11px;font-family:var(--mono);color:var(--ink);pointer-events:none;opacity:0;transition:opacity .1s;white-space:nowrap;z-index:5}.ghost.on{opacity:1}
-@media(max-width:820px){.dock{width:100vw}.rcapanel{width:100vw}.scenario{display:none}.summary .scount .lbl{display:none}
-  body.rca-open .hint,body.rca-open .legend{left:14px}}
+@media(max-width:820px){.dock{width:100vw}.rcapanel{width:100vw}.scenario,.scchip{display:none}.summary .scount .lbl{display:none}
+  body.rca-open .hint,body.rca-open .leftstack{left:14px}}
 /* Narrow desktops (kept last so it wins on source order): the top bar had ~2px of slack before the page-2 chip was
    added, so shed the most redundant items first. The version chip repeats the
    brand subtitle, and freshness repeats the timeline clock. */
