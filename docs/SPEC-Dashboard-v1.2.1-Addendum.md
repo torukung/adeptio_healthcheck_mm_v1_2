@@ -98,6 +98,8 @@ Every date is a **timeline index into the same 2016-step week**, never a wall cl
 
 **Single-file build.** `build_singlefile.py` now also honours the JS-comment form of the strip marker, `/*SF-STRIP-START*/ … /*SF-STRIP-END*/`, wrapped so that deleting the span leaves valid JS. The standalone file therefore **keeps the Incident Trace status card** (ticket data is inlined) but **drops every cross-page link**, since no portal ships beside it.
 
+**Page family, page 4.** `usecase-mmqr.html` + `assets/usecase.css` — clean use-case architecture doc (AYA Pay × MyanmarPay MMQR), light doc style shared with page 2 via `assets/flow.css`; no engine, no data files, no monitoring overlay; cross-linked from the pages 1–3 top bars (the page-1 chip sits inside the SF-STRIP block, so the single-file build is unaffected).
+
 ---
 
 *Verified 2026-08-16 · engine v1.2.1 · scenario "Pay Bill week" · all §9 checks pass at 1600/1440/1366/1280, dark + light. Portal verified over `file://` and `http://`, storage-available and storage-blocked.*
