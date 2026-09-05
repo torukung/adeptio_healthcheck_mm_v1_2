@@ -4,15 +4,17 @@ Live status dashboard + flow instrumentation + incident trace portal.
 
 > **© Adeptio Pulse — public demonstration template.** All data is mock — regenerated in-browser from a fixed seed; every figure is illustrative. Not affiliated with or describing any named institution.
 
-Three linked pages that make one argument: a mobile bill-payment journey at a Myanmar
+Pages 1&ndash;3 link into one argument: a mobile bill-payment journey at a Myanmar
 commercial bank can be watched end to end, when it breaks the checks themselves
 name the layer and the team, and the case that follows is already on a board.
+Page 4 stands alone as a clean use-case architecture doc.
 
 | | Page | What it is |
 |---|---|---|
 | 1 | [`index.html`](index.html) | **Live status dashboard.** 16 nodes, 17 links, a deterministic 7-day mock week (2016 steps × 5 min) with nine incident windows, three live synthesis tables, and a scrubable timeline. |
 | 2 | [`flow-instrumentation.html`](flow-instrumentation.html) | **The use case, fully instrumented.** The payment flow top to bottom — the software each step crosses, the hardware it rides, the 52 health checks that watch both, and five fault fingerprints that turn a check pattern into a routed ticket. |
 | 3 | [`incident-trace.html`](incident-trace.html) | **Incident Trace portal.** Where the routed ticket lands: a small board / list / detail ticketing surface over the same nine incident windows — 20 seeded cases, drag-to-transition, comments, linked issues, create. Editable; edits persist to `localStorage` in your browser only. |
+| 4 | [`usecase-mmqr.html`](usecase-mmqr.html) | **Use case : AYA Pay × MyanmarPay QR.** Clean architecture doc (no monitoring overlay): five zones, the nine-step off-us path and the on-us loop, MMQR field anatomy, the agent cash-in/out funding loop, roles & rulebook — compiled from public sources, with every not-public internal drawn dashed. |
 
 Vanilla HTML + CSS + SVG + JS. No framework, no build step, no dependencies, no
 network calls at runtime.
